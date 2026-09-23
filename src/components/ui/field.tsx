@@ -15,13 +15,13 @@ type FieldProps = {
 export function Field({ label, htmlFor, error, hint, className, children }: FieldProps) {
   return (
     <div className={cn("mb-3.5", className)} data-invalid={error ? "" : undefined}>
-      <label htmlFor={htmlFor} className="mb-1 block text-[0.85rem] font-semibold">
+      <label htmlFor={htmlFor} className="mb-1.5 block text-[0.88rem] font-semibold">
         {label}
       </label>
       {children}
-      {hint && <div className="text-muted-foreground mt-0.5 text-[0.8rem]">{hint}</div>}
+      {hint && <div className="text-muted-foreground mt-1 text-[0.84rem]">{hint}</div>}
       {error && (
-        <div role="alert" className="text-bad mt-0.5 text-[0.8rem]">
+        <div role="alert" className="text-bad mt-1 text-[0.84rem]">
           {error}
         </div>
       )}
@@ -57,7 +57,7 @@ export function ChipCheck({
   return (
     <label
       className={cn(
-        "border-border-strong inline-flex cursor-pointer items-center gap-1.5 rounded-full border bg-white px-3 py-1 text-sm font-medium",
+        "border-border-strong has-checked:border-primary has-checked:bg-primary-soft inline-flex cursor-pointer items-center gap-1.5 rounded-full border bg-white px-3.5 py-1.5 text-sm font-medium transition-colors",
         props.disabled && "cursor-not-allowed opacity-60"
       )}
     >

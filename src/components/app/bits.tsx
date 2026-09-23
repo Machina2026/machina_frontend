@@ -15,10 +15,12 @@ export function PageHead({
   actions?: React.ReactNode
 }) {
   return (
-    <div className="mb-[18px] flex flex-wrap items-start justify-between gap-4">
+    <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
-        <h1 className="mb-1">{title}</h1>
-        {children && <div className="text-muted-foreground">{children}</div>}
+        <h1 className="mb-2">{title}</h1>
+        {children && (
+          <div className="text-muted-foreground max-w-[760px] text-[1.02rem]">{children}</div>
+        )}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
@@ -28,7 +30,10 @@ export function PageHead({
 /** Breadcrumbs: [label, href] pairs, last item is the current page. */
 export function Crumbs({ items }: { items: (readonly [string, string?])[] }) {
   return (
-    <nav aria-label="Breadcrumb" className="text-muted-foreground mb-2.5 text-[0.85rem]">
+    <nav
+      aria-label="Breadcrumb"
+      className="text-muted-foreground mb-3 text-[0.85rem] tracking-wide"
+    >
       {items.map(([label, href], i) => (
         <React.Fragment key={i}>
           {i > 0 && " › "}
@@ -79,7 +84,12 @@ export function TableWrap({
   className?: string
 }) {
   return (
-    <div className={cn("bg-card overflow-x-auto rounded-lg border", className)}>
+    <div
+      className={cn(
+        "border-border/70 bg-card shadow-soft overflow-x-auto rounded-xl border",
+        className
+      )}
+    >
       <table className="data-table">{children}</table>
     </div>
   )
@@ -94,7 +104,7 @@ export function DemoBadge() {
 }
 
 export function Small({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("text-muted-foreground text-[0.85rem]", className)} {...props} />
+  return <div className={cn("text-muted-foreground text-[0.88rem]", className)} {...props} />
 }
 
 /** Bulleted list; `tone` sets the marker (tick, cross, question mark or dot). */

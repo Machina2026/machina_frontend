@@ -387,7 +387,7 @@ function DraftEditor({ draft: d, isClient }: { draft: Draft; isClient: boolean }
           </Card>
         </div>
 
-        <aside className="lg:sticky lg:top-[76px]">
+        <aside className="lg:sticky lg:top-[88px]">
           <Card>
             <h3>Draft prepared by Machina</h3>
             <div className="text-sm">

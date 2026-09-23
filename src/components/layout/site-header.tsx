@@ -1,6 +1,6 @@
 "use client"
 
-import { Menu } from "lucide-react"
+import { ClipboardList, Menu } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
@@ -39,13 +39,13 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="no-print bg-card sticky top-0 z-30 border-b">
-      <div className="mx-auto flex h-[60px] max-w-[1240px] items-center gap-5 px-4">
+    <header className="no-print border-border/80 sticky top-0 z-30 border-b bg-white/85 backdrop-blur-md supports-[backdrop-filter]:bg-white/75">
+      <div className="mx-auto flex h-[68px] max-w-[1240px] items-center gap-3 px-4 sm:gap-8">
         <Logo />
         <nav
           aria-label="Main"
           className={cn(
-            "max-lg:bg-card flex-1 gap-1 max-lg:absolute max-lg:inset-x-0 max-lg:top-[60px] max-lg:flex-col max-lg:border-b max-lg:p-2",
+            "max-lg:shadow-soft flex-1 gap-1 max-lg:absolute max-lg:inset-x-0 max-lg:top-[68px] max-lg:flex-col max-lg:border-b max-lg:bg-white max-lg:p-3 lg:gap-6",
             open ? "flex" : "max-lg:hidden lg:flex"
           )}
         >
@@ -58,8 +58,8 @@ export function SiteHeader() {
                 onClick={() => setOpen(false)}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "text-foreground hover:bg-muted hover:text-primary-hover rounded-md px-2.5 py-2 text-[0.93rem] no-underline hover:no-underline",
-                  active && "bg-muted text-primary-hover"
+                  "text-foreground/80 hover:text-foreground max-lg:hover:bg-muted lg:after:bg-primary relative py-2 text-[0.95rem] no-underline transition-colors hover:no-underline max-lg:rounded-lg max-lg:px-3 lg:after:absolute lg:after:inset-x-0 lg:after:-bottom-[14px] lg:after:h-0.5 lg:after:scale-x-0 lg:after:transition-transform lg:hover:after:scale-x-100",
+                  active && "text-foreground max-lg:bg-muted font-medium lg:after:scale-x-100"
                 )}
               >
                 {label}
@@ -67,10 +67,11 @@ export function SiteHeader() {
             )
           })}
         </nav>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           {role !== "partner" && (
             <Link href="/request" className={buttonVariants({ size: "sm" })} title="Request draft">
-              Request
+              <ClipboardList aria-hidden className="sm:hidden" />
+              <span className="sr-only sm:not-sr-only">Request</span>
               {draft.items.length > 0 && (
                 <span className="bg-primary rounded-full px-1.5 text-[0.72rem] font-bold text-white">
                   {draft.items.length}

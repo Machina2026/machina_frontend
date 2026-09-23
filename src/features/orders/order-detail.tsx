@@ -517,7 +517,7 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
                 </Card>
               </div>
 
-              <aside className="space-y-4 xl:sticky xl:top-[76px]">
+              <aside className="space-y-4 xl:sticky xl:top-[88px]">
                 <Card>
                   <h3>Agreed total</h3>
                   <table className="w-full text-[0.92rem]">

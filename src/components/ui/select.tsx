@@ -13,7 +13,7 @@ function Select({
   ...props
 }: React.ComponentProps<"select"> & { options: readonly Option[] }) {
   return (
-    <select data-slot="select" className={cn(controlClass, "min-h-10 pr-8", className)} {...props}>
+    <select data-slot="select" className={cn(controlClass, "min-h-11 pr-8", className)} {...props}>
       {options.map(([value, label]) => (
         <option key={value} value={value}>
           {label}

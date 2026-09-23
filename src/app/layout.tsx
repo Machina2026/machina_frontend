@@ -6,6 +6,8 @@ import type { Metadata } from "next"
 import { DemoBar, SiteFooter } from "@/components/layout/site-chrome"
 import { SiteHeader } from "@/components/layout/site-header"
 
+import "@fontsource-variable/fraunces/opsz.css"
+
 import "./globals.css"
 
 import { Providers } from "./providers"
@@ -19,11 +21,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col overflow-x-clip">
         <Providers>
           <DemoBar />
           <SiteHeader />
-          <main className="mx-auto w-full max-w-[1240px] flex-1 px-4 pt-6 pb-16">{children}</main>
+          <main className="mx-auto w-full max-w-[1240px] flex-1 px-4 pt-8 pb-20">{children}</main>
           <SiteFooter />
         </Providers>
       </body>

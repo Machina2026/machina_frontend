@@ -9,7 +9,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: "Fraunces Variable", Georgia, "Times New Roman", serif;
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -26,6 +26,7 @@
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
+  --color-gold: var(--gold);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -39,78 +40,99 @@
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
   --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
   --color-ink-foreground: var(--ink-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
+  --shadow-soft: 0 1px 2px rgb(20 18 14 / 0.04), 0 8px 24px -12px rgb(20 18 14 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(20 18 14 / 0.05), 0 18px 40px -18px rgb(20 18 14 / 0.25);
 }
 
-/* Palette from the Machina Rent demo: warm neutrals, construction orange accent. */
+/*
+ * "Ink & copper": warm ivory surfaces, deep ink, a refined copper accent and a
+ * champagne-gold detail colour. Text colours meet WCAG AA on every surface.
+ */
 :root {
-  --background: #f6f6f3;
-  --foreground: #25282b;
+  --background: #f6f4ef;
+  --foreground: #1b1c1f;
   --card: #ffffff;
-  --card-foreground: #25282b;
+  --card-foreground: #1b1c1f;
   --popover: #ffffff;
-  --popover-foreground: #25282b;
-  --primary: #e0680b;
-  --primary-hover: #c65a06;
+  --popover-foreground: #1b1c1f;
+  --primary: #b9581a;
+  --primary-hover: #9a4712;
   --primary-foreground: #ffffff;
-  --primary-soft: #fdf0e4;
-  --secondary: #fafaf8;
-  --secondary-foreground: #25282b;
-  --muted: #fafaf8;
-  --muted-foreground: #5d6166;
-  --faint: #8a8e93;
-  --accent: #f3f3ef;
-  --accent-foreground: #25282b;
-  --destructive: #b3261e;
-  --border: #e2e2dc;
-  --border-strong: #cfcfc7;
-  --input: #cfcfc7;
-  --ring: #e0680b;
-  --ok: #1f7a4d;
-  --ok-soft: #e6f4ec;
-  --warn: #9a6400;
-  --warn-soft: #fdf4dc;
-  --bad: #b3261e;
-  --bad-soft: #fbe9e7;
-  --info: #25618f;
-  --info-soft: #e7f0f7;
-  --ink: #2d3033;
-  --ink-foreground: #f1f1ee;
-  --radius: 0.5rem;
+  --primary-soft: #f7ebe0;
+  --gold: #c9a45c;
+  --secondary: #f9f8f5;
+  --secondary-foreground: #1b1c1f;
+  --muted: #f3f1ec;
+  --muted-foreground: #4d5157;
+  --faint: #6f737a;
+  --accent: #efece5;
+  --accent-foreground: #1b1c1f;
+  --destructive: #a8261d;
+  --border: #e4e0d7;
+  --border-strong: #cdc7ba;
+  --input: #cdc7ba;
+  --ring: #b9581a;
+  --ok: #1d6f47;
+  --ok-soft: #e6f2eb;
+  --warn: #85560a;
+  --warn-soft: #fbf2dc;
+  --bad: #a8261d;
+  --bad-soft: #fae8e5;
+  --info: #22567f;
+  --info-soft: #e6eff6;
+  --ink: #16171a;
+  --ink-2: #23252a;
+  --ink-foreground: #f2efe8;
+  --radius: 0.75rem;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground text-[15px] leading-normal;
-  }
   html {
     @apply font-sans;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-background text-foreground text-base leading-relaxed;
+    font-feature-settings: "ss01", "cv11";
   }
   h1,
   h2,
   h3,
   h4 {
-    @apply leading-tight font-semibold tracking-tight;
+    @apply leading-tight font-semibold;
+  }
+  /* Serif display type for the larger headings; small headings stay in the sans for legibility. */
+  h1,
+  h2 {
+    font-family: var(--font-heading);
+    font-optical-sizing: auto;
+    font-weight: 560;
+    letter-spacing: -0.015em;
   }
   h1 {
-    @apply text-[1.75rem];
+    @apply text-[2rem] sm:text-[2.25rem];
   }
   h2 {
-    @apply text-xl;
+    @apply text-[1.5rem];
   }
   h3 {
-    @apply text-[1.08rem];
+    @apply text-[1.12rem] tracking-[-0.005em];
   }
   a {
-    @apply text-primary-hover;
+    @apply text-primary-hover underline-offset-4;
+  }
+  ::selection {
+    background: #f1d9c3;
   }
   input[type="checkbox"],
   input[type="radio"] {
@@ -120,13 +142,13 @@
 
 @layer components {
   .data-table {
-    @apply w-full border-collapse text-[0.92rem];
+    @apply w-full border-collapse text-[0.95rem];
   }
   .data-table th {
-    @apply border-border bg-muted text-muted-foreground border-b-2 px-2.5 py-2 text-left text-[0.78rem] font-bold tracking-wide whitespace-nowrap uppercase;
+    @apply border-border bg-secondary text-muted-foreground border-b px-3.5 py-3 text-left text-[0.72rem] font-semibold tracking-[0.08em] whitespace-nowrap uppercase;
   }
   .data-table td {
-    @apply border-border border-b px-2.5 py-2 align-top;
+    @apply border-border border-b px-3.5 py-3 align-top;
   }
   .data-table tr:last-child td {
     @apply border-b-0;
@@ -135,7 +157,7 @@
     @apply text-right whitespace-nowrap tabular-nums;
   }
   .data-table tr.clickable {
-    @apply hover:bg-muted cursor-pointer;
+    @apply cursor-pointer transition-colors hover:bg-[#faf7f1];
   }
   .data-table tr.to-confirm td {
     @apply bg-warn-soft;
@@ -143,6 +165,10 @@
   .data-table input,
   .data-table select {
     @apply min-h-9 py-1;
+  }
+  /* Small uppercase label above a section or value. */
+  .eyebrow {
+    @apply text-primary text-[0.72rem] font-semibold tracking-[0.14em] uppercase;
   }
 }
 

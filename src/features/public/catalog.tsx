@@ -218,7 +218,7 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
                       return (
                         <article
                           key={m.id}
-                          className="bg-card grid gap-4 rounded-lg border p-4 md:grid-cols-[180px_minmax(0,1fr)_220px]"
+                          className="border-border/70 bg-card shadow-soft hover:shadow-lift grid gap-5 rounded-xl border p-5 transition-shadow duration-200 md:grid-cols-[200px_minmax(0,1fr)_230px]"
                         >
                           <ModelImage src={m.image} alt={`${m.brand} ${m.model}`} />
                           <div className="min-w-0">

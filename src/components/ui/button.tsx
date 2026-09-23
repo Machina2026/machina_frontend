@@ -4,24 +4,25 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const variants = cva(
-  "inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md border font-medium whitespace-nowrap no-underline transition-colors outline-none select-none hover:no-underline focus-visible:ring-3 focus-visible:ring-ring/35 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg border font-medium tracking-[0.005em] whitespace-nowrap no-underline transition-[background-color,border-color,box-shadow,transform] duration-150 outline-none select-none hover:no-underline focus-visible:ring-3 focus-visible:ring-ring/35 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "border-border-strong bg-card text-foreground hover:bg-muted",
+        default:
+          "border-border-strong bg-card text-foreground hover:border-foreground/40 hover:bg-secondary",
         primary:
-          "border-primary bg-primary text-primary-foreground hover:border-primary-hover hover:bg-primary-hover",
-        dark: "border-ink bg-ink text-white hover:bg-ink/90",
+          "border-primary bg-primary text-primary-foreground shadow-[0_1px_0_rgb(255_255_255/0.15)_inset,0_6px_16px_-8px_rgb(185_88_26/0.7)] hover:border-primary-hover hover:bg-primary-hover",
+        dark: "border-ink bg-ink text-ink-foreground shadow-[0_6px_16px_-8px_rgb(0_0_0/0.6)] hover:bg-ink-2",
         ok: "border-ok bg-ok text-white hover:bg-ok/90",
         danger: "border-[#e7c0bc] bg-card text-bad hover:bg-bad-soft",
         ghost: "border-transparent bg-transparent text-foreground hover:bg-muted",
         link: "border-0 bg-transparent text-primary-hover hover:underline",
       },
       size: {
-        default: "min-h-10 px-3.5 py-2 text-[0.93rem]",
-        sm: "min-h-8 px-2.5 py-1 text-[0.85rem]",
-        lg: "min-h-12 px-5 py-3 text-base",
-        icon: "size-8 p-0",
+        default: "min-h-11 px-4 py-2 text-[0.95rem]",
+        sm: "min-h-9 px-3 py-1 text-[0.88rem]",
+        lg: "min-h-13 px-6 py-3 text-[1.02rem]",
+        icon: "size-9 p-0",
       },
       block: { true: "w-full", false: "" },
     },

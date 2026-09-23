@@ -80,13 +80,13 @@ function Menu({ items, area }: { items: MenuItem[]; area: Area }) {
           href={i.href}
           aria-current={i.href === active ? "page" : undefined}
           className={cn(
-            "text-foreground hover:bg-muted flex shrink-0 items-center justify-between gap-2 rounded-md px-3 py-2 text-[0.92rem] no-underline hover:no-underline",
-            i.href === active && "bg-primary-soft text-primary-hover font-semibold"
+            "text-ink-foreground/75 flex shrink-0 items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-[0.93rem] no-underline transition-colors hover:bg-white/[0.06] hover:text-white hover:no-underline md:rounded-l-none md:border-l-2 md:border-transparent",
+            i.href === active && "md:border-primary bg-white/[0.08] font-medium text-white"
           )}
         >
           {i.label}
           {!!i.count && (
-            <span className="bg-primary rounded-full px-1.5 text-[0.72rem] font-bold text-white">
+            <span className="bg-primary min-w-5 rounded-full px-1.5 text-center text-[0.72rem] font-semibold text-white">
               {i.count}
             </span>
           )}
@@ -107,13 +107,15 @@ function SupplierNav() {
 export function DashShell({ area, children }: { area: Area; children: React.ReactNode }) {
   const me = useMe().data
   return (
-    <div className="grid items-start gap-5 md:grid-cols-[230px_minmax(0,1fr)]">
-      <aside className="no-print bg-card rounded-lg border p-2.5 md:sticky md:top-[76px]">
-        <div className="mb-2 border-b px-2 pb-2.5">
-          <span className="text-muted-foreground block text-[0.8rem]">
+    <div className="grid items-start gap-6 md:grid-cols-[250px_minmax(0,1fr)] lg:gap-8">
+      <aside className="no-print bg-ink text-ink-foreground shadow-lift rounded-2xl p-3 md:sticky md:top-[88px]">
+        <div className="mb-3 border-b border-white/10 px-3 pt-2 pb-4">
+          <span className="text-gold block text-[0.7rem] font-semibold tracking-[0.16em] uppercase">
             {area === "buyer" ? "Customer area" : "Rental company area"}
           </span>
-          <b className="text-[0.95rem]">{me?.org.name ?? " "}</b>
+          <b className="font-heading mt-1.5 block text-[1.1rem] leading-snug font-medium text-white">
+            {me?.org.name ?? " "}
+          </b>
         </div>
         {area === "buyer" ? <BuyerNav /> : <SupplierNav />}
       </aside>

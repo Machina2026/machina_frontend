@@ -19,14 +19,16 @@ export function Modal({ open, onOpenChange, title, description, wide, children }
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/35 transition-opacity data-ending-style:opacity-0 data-starting-style:opacity-0" />
+        <Dialog.Backdrop className="bg-ink/45 fixed inset-0 z-50 backdrop-blur-[2px] transition-opacity data-ending-style:opacity-0 data-starting-style:opacity-0" />
         <Dialog.Popup
           className={cn(
             "bg-card fixed top-1/2 left-1/2 z-50 max-h-[90dvh] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border p-5 shadow-xl transition-[scale,opacity] data-ending-style:scale-[0.98] data-ending-style:opacity-0 data-starting-style:scale-[0.98] data-starting-style:opacity-0",
             wide ? "max-w-2xl" : "max-w-lg"
           )}
         >
-          <Dialog.Title className="mb-1 text-lg font-semibold">{title}</Dialog.Title>
+          <Dialog.Title className="font-heading mb-1 text-[1.35rem] font-semibold">
+            {title}
+          </Dialog.Title>
           {description && (
             <Dialog.Description className="text-muted-foreground mb-3 text-sm">
               {description}

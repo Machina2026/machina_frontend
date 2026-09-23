@@ -7,8 +7,8 @@ function Card({ className, flat, ...props }: React.ComponentProps<"div"> & { fla
     <div
       data-slot="card"
       className={cn(
-        "bg-card text-card-foreground rounded-lg border p-[18px]",
-        !flat && "shadow-[0_1px_2px_rgba(0,0,0,.05),0_2px_8px_rgba(0,0,0,.04)]",
+        "bg-card text-card-foreground rounded-xl border p-5 sm:p-6",
+        !flat && "shadow-soft border-border/70",
         className
       )}
       {...props}
@@ -27,7 +27,7 @@ function CardHead({
   className?: string
 }) {
   return (
-    <div className={cn("mb-3 flex flex-wrap items-center justify-between gap-3", className)}>
+    <div className={cn("mb-4 flex flex-wrap items-center justify-between gap-3", className)}>
       <h3 className="m-0">{title}</h3>
       {actions}
     </div>
