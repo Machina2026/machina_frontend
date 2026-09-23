@@ -1,0 +1,156 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-faint: var(--faint);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+}
+
+/* Palette from the Machina Rent demo: warm neutrals, construction orange accent. */
+:root {
+  --background: #f6f6f3;
+  --foreground: #25282b;
+  --card: #ffffff;
+  --card-foreground: #25282b;
+  --popover: #ffffff;
+  --popover-foreground: #25282b;
+  --primary: #e0680b;
+  --primary-hover: #c65a06;
+  --primary-foreground: #ffffff;
+  --primary-soft: #fdf0e4;
+  --secondary: #fafaf8;
+  --secondary-foreground: #25282b;
+  --muted: #fafaf8;
+  --muted-foreground: #5d6166;
+  --faint: #8a8e93;
+  --accent: #f3f3ef;
+  --accent-foreground: #25282b;
+  --destructive: #b3261e;
+  --border: #e2e2dc;
+  --border-strong: #cfcfc7;
+  --input: #cfcfc7;
+  --ring: #e0680b;
+  --ok: #1f7a4d;
+  --ok-soft: #e6f4ec;
+  --warn: #9a6400;
+  --warn-soft: #fdf4dc;
+  --bad: #b3261e;
+  --bad-soft: #fbe9e7;
+  --info: #25618f;
+  --info-soft: #e7f0f7;
+  --ink: #2d3033;
+  --ink-foreground: #f1f1ee;
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground text-[15px] leading-normal;
+  }
+  html {
+    @apply font-sans;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply leading-tight font-semibold tracking-tight;
+  }
+  h1 {
+    @apply text-[1.75rem];
+  }
+  h2 {
+    @apply text-xl;
+  }
+  h3 {
+    @apply text-[1.08rem];
+  }
+  a {
+    @apply text-primary-hover;
+  }
+  input[type="checkbox"],
+  input[type="radio"] {
+    @apply accent-primary;
+  }
+}
+
+@layer components {
+  .data-table {
+    @apply w-full border-collapse text-[0.92rem];
+  }
+  .data-table th {
+    @apply border-border bg-muted text-muted-foreground border-b-2 px-2.5 py-2 text-left text-[0.78rem] font-bold tracking-wide whitespace-nowrap uppercase;
+  }
+  .data-table td {
+    @apply border-border border-b px-2.5 py-2 align-top;
+  }
+  .data-table tr:last-child td {
+    @apply border-b-0;
+  }
+  .data-table .num {
+    @apply text-right whitespace-nowrap tabular-nums;
+  }
+  .data-table tr.clickable {
+    @apply hover:bg-muted cursor-pointer;
+  }
+  .data-table tr.to-confirm td {
+    @apply bg-warn-soft;
+  }
+  .data-table input,
+  .data-table select {
+    @apply min-h-9 py-1;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}
