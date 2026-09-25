@@ -1,7 +1,6 @@
 "use client"
 
 import { useMutation, useQueries, useQuery } from "@tanstack/react-query"
-import { ClipboardList } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useMemo } from "react"
@@ -22,7 +21,7 @@ import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { api, ApiError } from "@/lib/machina/api"
 import { clearDraft, saveDraft, useDraft, type Draft, type DraftItem } from "@/lib/machina/draft"
-import { addDays, eur, today } from "@/lib/machina/format"
+import { addDays, eur, stripDemo, today } from "@/lib/machina/format"
 import { useMe, useMeta } from "@/lib/machina/hooks"
 import { OPERATOR_MODE, TRANSPORT_MODE } from "@/lib/machina/labels"
 import type { Client, EstimateGroup, ModelDetail, RentalRequest } from "@/lib/machina/types"
@@ -42,9 +41,9 @@ export function RequestDraftView() {
       <>
         <h1>Your request</h1>
         <EmptyState
-          icon={ClipboardList}
-          title="Your request is empty."
-          description="Add machines from the catalogue, or let the assistant help you."
+          image="/img/empty-request.svg"
+          title="Your request is empty"
+          description="Add machines from the catalogue, or describe the job and let the assistant pick them. You then send one request and each rental company replies with its own quote."
           action={
             <div className="flex gap-2">
               <Link href="/catalog" className={buttonVariants({ variant: "primary" })}>
@@ -157,7 +156,11 @@ function DraftEditor({ draft: d, isClient }: { draft: Draft; isClient: boolean }
       </PageHead>
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div>
-          <h2>Machines and accessories</h2>
+          <StepTitle
+            n={1}
+            title="Machines and accessories"
+            hint="Pick the offer, accessories, delivery and operator for each machine."
+          />
           {errors.items && (
             <Alert tone="bad" className="mb-3">
               {errors.items}
@@ -276,7 +279,11 @@ function DraftEditor({ draft: d, isClient }: { draft: Draft; isClient: boolean }
           })}
 
           <Card flat>
-            <h2>Site, period and needs</h2>
+            <StepTitle
+              n={2}
+              title="Site, period and needs"
+              hint="Where and when. Access and ground details help partners confirm the right machine."
+            />
             {isClient && (
               <Field label="Site" htmlFor="d-site" error={errors.siteId}>
                 <Select
@@ -389,6 +396,7 @@ function DraftEditor({ draft: d, isClient }: { draft: Draft; isClient: boolean }
 
         <aside className="lg:sticky lg:top-[88px]">
           <Card>
+            <div className="eyebrow mb-1">Step 3 · Review and send</div>
             <h3>Draft prepared by Machina</h3>
             <div className="text-sm">
               {estimate.isError ? (
@@ -473,7 +481,7 @@ function EstimateSummary({ groups }: { groups: EstimateGroup[] }) {
       {groups.map((g) => (
         <div key={g.partnerId} className="border-b py-2">
           <div className="flex justify-between gap-2">
-            <b>{g.partnerName}</b>
+            <b>{stripDemo(g.partnerName)}</b>
             <span>
               {eur(g.totals.net)} {!g.totals.complete && <Badge tone="warn">partial</Badge>}
             </span>
@@ -507,5 +515,19 @@ function EstimateSummary({ groups }: { groups: EstimateGroup[] }) {
         Will be sent to <b>{groups.length}</b> partner{groups.length === 1 ? "" : "s"}.
       </p>
     </>
+  )
+}
+
+function StepTitle({ n, title, hint }: { n: number; title: string; hint: string }) {
+  return (
+    <div className="mb-4 flex items-start gap-3">
+      <span className="bg-primary font-heading mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[0.95rem] font-semibold text-white">
+        {n}
+      </span>
+      <div>
+        <h2 className="mb-0.5 text-[1.4rem]">{title}</h2>
+        <p className="text-muted-foreground m-0 text-sm">{hint}</p>
+      </div>
+    </div>
   )
 }

@@ -39,37 +39,42 @@ export function periodCost(rates: Partial<Prices>, days: number): [number | null
   const options: [number, string][] = []
   if (day) options.push([day * days, `${plural(days, "day", "days")} × ${fmtEur(day)}`])
 
+  // Whole months, then whole weeks, then leftover days; leftover days are
+  // billed as one more week (or month) when that is cheaper.
   let rem = days
-  let amount = 0
-  const parts: string[] = []
+  let [m, w, d] = [0, 0, 0]
+  let roundedUp = ""
   let ok = true
   if (month && rem >= 30) {
-    const m = Math.floor(rem / 30)
-    amount += m * month
+    m = Math.floor(rem / 30)
     rem -= m * 30
-    parts.push(plural(m, "month", "months"))
   }
   if (week && rem >= 7) {
-    const w = Math.floor(rem / 7)
-    amount += w * week
+    w = Math.floor(rem / 7)
     rem -= w * 7
-    parts.push(plural(w, "week", "weeks"))
   }
   if (rem) {
     if (day && (!week || rem * day <= week)) {
-      amount += rem * day
-      parts.push(plural(rem, "day", "days"))
+      d = rem
     } else if (week) {
-      amount += week
-      parts.push(`1 week (for ${rem} remaining days)`)
+      w += 1
+      roundedUp = `a full week costs less than ${plural(rem, "extra day", "extra days")}`
     } else if (month) {
-      amount += month
-      parts.push(`1 month (for ${rem} remaining days)`)
+      m += 1
+      roundedUp = `a full month costs less than ${plural(rem, "extra day", "extra days")}`
     } else {
       ok = false
     }
   }
-  if (ok && parts.length) options.push([amount, parts.join(" + ")])
+  const parts = [
+    m && plural(m, "month", "months"),
+    w && plural(w, "week", "weeks"),
+    d && plural(d, "day", "days"),
+  ].filter(Boolean)
+  if (ok && parts.length) {
+    const amount = m * (month ?? 0) + w * (week ?? 0) + d * (day ?? 0)
+    options.push([amount, parts.join(" + ") + (roundedUp ? ` (${roundedUp})` : "")])
+  }
   if (month && days < 30) options.push([month, "1 month (monthly rate)"])
   if (week && days < 7) options.push([week, "1 week (weekly rate)"])
   if (!options.length) return [null, "rate on quote"]

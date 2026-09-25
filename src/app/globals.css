@@ -47,8 +47,11 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
-  --shadow-soft: 0 1px 2px rgb(20 18 14 / 0.04), 0 8px 24px -12px rgb(20 18 14 / 0.12);
-  --shadow-lift: 0 2px 4px rgb(20 18 14 / 0.05), 0 18px 40px -18px rgb(20 18 14 / 0.25);
+  --color-sun: var(--sun);
+  --color-sun-soft: var(--sun-soft);
+  --shadow-soft: 0 1px 2px rgb(20 18 14 / 0.04), 0 10px 28px -14px rgb(20 18 14 / 0.16);
+  --shadow-lift: 0 2px 6px rgb(20 18 14 / 0.06), 0 24px 48px -20px rgb(20 18 14 / 0.32);
+  --shadow-glow: 0 12px 32px -12px rgb(217 104 30 / 0.6);
 }
 
 /*
@@ -62,11 +65,14 @@
   --card-foreground: #1b1c1f;
   --popover: #ffffff;
   --popover-foreground: #1b1c1f;
-  --primary: #b9581a;
-  --primary-hover: #9a4712;
+  --primary: #c05a17;
+  --primary-hover: #9c4710;
   --primary-foreground: #ffffff;
-  --primary-soft: #f7ebe0;
-  --gold: #c9a45c;
+  --primary-soft: #f9ebdf;
+  --gold: #d6ad5f;
+  /* Safety yellow: highlights on dark surfaces only (not for text on light). */
+  --sun: #f5b52e;
+  --sun-soft: #fdf1d3;
   --secondary: #f9f8f5;
   --secondary-foreground: #1b1c1f;
   --muted: #f3f1ec;
@@ -78,7 +84,7 @@
   --border: #e4e0d7;
   --border-strong: #cdc7ba;
   --input: #cdc7ba;
-  --ring: #b9581a;
+  --ring: #c05a17;
   --ok: #1d6f47;
   --ok-soft: #e6f2eb;
   --warn: #85560a;
@@ -87,10 +93,10 @@
   --bad-soft: #fae8e5;
   --info: #22567f;
   --info-soft: #e6eff6;
-  --ink: #16171a;
-  --ink-2: #23252a;
+  --ink: #121316;
+  --ink-2: #1d1f24;
   --ink-foreground: #f2efe8;
-  --radius: 0.75rem;
+  --radius: 0.875rem;
 }
 
 @layer base {
@@ -104,12 +110,29 @@
   body {
     @apply bg-background text-foreground text-base leading-relaxed;
     font-feature-settings: "ss01", "cv11";
+    /* Warm ambient light plus a faint paper grain, fixed behind the content. */
+    background-image:
+      radial-gradient(1100px 520px at 105% -8%, rgb(185 88 26 / 0.09), transparent 70%),
+      radial-gradient(900px 480px at -8% 18%, rgb(201 164 92 / 0.11), transparent 70%),
+      url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27160%27 height=%27160%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%272%27 stitchTiles=%27stitch%27/%3E%3CfeColorMatrix values=%270 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0 0.05 0 0 0 0.05 0%27/%3E%3C/filter%3E%3Crect width=%27160%27 height=%27160%27 filter=%27url(%23n)%27/%3E%3C/svg%3E");
+    background-attachment: fixed, fixed, scroll;
   }
   h1,
   h2,
   h3,
   h4 {
     @apply leading-tight font-semibold;
+  }
+  /* Default spacing below headings; components override it with their own margin classes. */
+  h1 {
+    @apply mb-3;
+  }
+  h2 {
+    @apply mb-3;
+  }
+  h3,
+  h4 {
+    @apply mb-3;
   }
   /* Serif display type for the larger headings; small headings stay in the sans for legibility. */
   h1,
@@ -120,10 +143,10 @@
     letter-spacing: -0.015em;
   }
   h1 {
-    @apply text-[2rem] sm:text-[2.25rem];
+    @apply text-[2.1rem] sm:text-[2.6rem];
   }
   h2 {
-    @apply text-[1.5rem];
+    @apply text-[1.6rem];
   }
   h3 {
     @apply text-[1.12rem] tracking-[-0.005em];
@@ -145,10 +168,10 @@
     @apply w-full border-collapse text-[0.95rem];
   }
   .data-table th {
-    @apply border-border bg-secondary text-muted-foreground border-b px-3.5 py-3 text-left text-[0.72rem] font-semibold tracking-[0.08em] whitespace-nowrap uppercase;
+    @apply border-border bg-muted/70 text-muted-foreground border-b px-4 py-3.5 text-left text-[0.72rem] font-semibold tracking-[0.08em] whitespace-nowrap uppercase;
   }
   .data-table td {
-    @apply border-border border-b px-3.5 py-3 align-top;
+    @apply border-border/80 border-b px-4 py-3.5 align-top;
   }
   .data-table tr:last-child td {
     @apply border-b-0;
@@ -157,7 +180,7 @@
     @apply text-right whitespace-nowrap tabular-nums;
   }
   .data-table tr.clickable {
-    @apply cursor-pointer transition-colors hover:bg-[#faf7f1];
+    @apply hover:bg-primary-soft/45 cursor-pointer transition-colors;
   }
   .data-table tr.to-confirm td {
     @apply bg-warn-soft;
@@ -166,9 +189,44 @@
   .data-table select {
     @apply min-h-9 py-1;
   }
+  /* Dark panel with a faint blueprint grid (hero, sidebars, call-to-action). */
+  .bg-blueprint {
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.045) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
   /* Small uppercase label above a section or value. */
   .eyebrow {
-    @apply text-primary text-[0.72rem] font-semibold tracking-[0.14em] uppercase;
+    @apply text-primary inline-flex items-center gap-2 text-[0.72rem] font-semibold tracking-[0.16em] uppercase;
+  }
+  .eyebrow::before {
+    content: "";
+    @apply inline-block h-0.5 w-5 rounded-full bg-current;
+  }
+  /* Warm gradient for highlighted words in large headings on dark panels. */
+  .text-gradient {
+    background: linear-gradient(100deg, #ffd48f 0%, #f7a55b 45%, #ec7430 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* Soft dotted texture for light panels. */
+  .bg-dots {
+    background-image: radial-gradient(rgb(20 18 14 / 0.1) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+  /* Hazard stripes, used as a thin accent rule. */
+  .hazard {
+    background-image: repeating-linear-gradient(-45deg, var(--sun) 0 9px, var(--ink) 9px 18px);
+  }
+  /* Card that rises on hover. */
+  .lift {
+    @apply hover:shadow-lift transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-1;
+  }
+  /* Tinted square that holds an icon. */
+  .icon-tile {
+    @apply bg-primary-soft text-primary inline-flex size-11 shrink-0 items-center justify-center rounded-xl [&_svg]:size-5;
   }
 }
 

@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge"
-import { date, dateTime, eur } from "@/lib/machina/format"
+import { date, dateTime, eur, stripDemo } from "@/lib/machina/format"
 import type { HistoryEntry, Needs, Quote, SiteRef } from "@/lib/machina/types"
 
 import { KV, TableWrap } from "./bits"
@@ -68,8 +68,7 @@ export function VersionsList({ quote: q }: { quote: Quote }) {
         <thead>
           <tr>
             <th>Version</th>
-            <th>Author</th>
-            <th>Date</th>
+            <th>Author and date</th>
             <th>Valid until</th>
             <th className="num">Net</th>
             <th>Status</th>
@@ -86,8 +85,12 @@ export function VersionsList({ quote: q }: { quote: Quote }) {
                   <Badge tone="info">quote</Badge>
                 )}
               </td>
-              <td>{v.author}</td>
-              <td className="whitespace-nowrap">{dateTime(v.createdAt)}</td>
+              <td>
+                {stripDemo(v.author)}
+                <div className="text-faint text-[0.82rem] whitespace-nowrap">
+                  {dateTime(v.createdAt)}
+                </div>
+              </td>
               <td className="whitespace-nowrap">{v.validUntil ? date(v.validUntil) : "—"}</td>
               <td className="num">
                 {eur(v.totals.net)} {!v.totals.complete && <Badge tone="warn">partial</Badge>}

@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-label="A rental yard with machines lined up under warm evening light">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b1c1f"/>
+      <stop offset="0.6" stop-color="#2d2320"/>
+      <stop offset="1" stop-color="#5a2e12"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.78" cy="0.25" r="0.55">
+      <stop offset="0" stop-color="#f3b26b" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#f3b26b" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0v32" fill="none" stroke="#fff" stroke-opacity="0.05"/>
+    </pattern>
+  </defs>
+  <rect width="640" height="480" fill="url(#bg)"/>
+  <rect width="640" height="480" fill="url(#grid)"/>
+  <rect width="640" height="480" fill="url(#glow)"/>
+  <circle cx="500" cy="118" r="46" fill="#f0c9a4" opacity="0.25"/>
+  <!-- warehouse -->
+  <path d="M40 300V190l130-60 130 60v110z" fill="#26262a"/>
+  <path d="M40 190l130-60 130 60" fill="none" stroke="#c9a45c" stroke-opacity="0.6" stroke-width="3"/>
+  <rect x="120" y="220" width="100" height="80" fill="#1b1b1e"/>
+  <path d="M120 236h100M120 252h100M120 268h100M120 284h100" stroke="#35353a" stroke-width="2"/>
+  <rect x="62" y="210" width="36" height="22" fill="#f3b26b" opacity="0.5"/>
+  <rect x="242" y="210" width="36" height="22" fill="#f3b26b" opacity="0.5"/>
+  <!-- light mast -->
+  <path d="M560 360V120" stroke="#c9a45c" stroke-width="4"/>
+  <rect x="540" y="110" width="40" height="12" rx="3" fill="#f3d9a8"/>
+  <path d="M540 122l-60 120h160l-60-120z" fill="#f3d9a8" opacity="0.07"/>
+  <!-- ground -->
+  <rect y="360" width="640" height="120" fill="#141416"/>
+  <path d="M0 362h640" stroke="#c9a45c" stroke-opacity="0.4" stroke-width="2"/>
+  <path d="M60 420h80M200 420h80M340 420h80M480 420h80" stroke="#c9a45c" stroke-opacity="0.25" stroke-width="3" stroke-dasharray="14 10"/>
+  <!-- mini excavator -->
+  <g transform="translate(70 290)">
+    <rect x="0" y="52" width="110" height="20" rx="10" fill="#1d1d20"/>
+    <rect x="10" y="20" width="90" height="34" rx="5" fill="#c2611a"/>
+    <rect x="16" y="0" width="38" height="26" rx="4" fill="#c2611a"/>
+    <rect x="22" y="5" width="26" height="15" rx="2" fill="#f3c38f" opacity="0.75"/>
+    <path d="M90 26l54-40" stroke="#c2611a" stroke-width="11" stroke-linecap="round"/>
+    <path d="M144 -14l24 54" stroke="#c2611a" stroke-width="8" stroke-linecap="round"/>
+    <path d="M160 36l24 5-6 20-17-5z" fill="#1d1d20"/>
+  </g>
+  <!-- scissor lift -->
+  <g transform="translate(300 250)">
+    <rect x="0" y="0" width="90" height="12" fill="#c9a45c"/>
+    <path d="M6 0v-14h78V0" fill="none" stroke="#c9a45c" stroke-width="3"/>
+    <path d="M10 12l70 26L10 64l70 26" fill="none" stroke="#e9e3d6" stroke-width="5"/>
+    <path d="M80 12L10 38l70 26-70 26" fill="none" stroke="#bdb6a8" stroke-width="5"/>
+    <rect x="-4" y="90" width="98" height="18" rx="4" fill="#c2611a"/>
+    <circle cx="14" cy="112" r="8" fill="#1d1d20"/><circle cx="76" cy="112" r="8" fill="#1d1d20"/>
+  </g>
+  <!-- dumper -->
+  <g transform="translate(430 318)">
+    <path d="M0 8h80l-10 34H6z" fill="#a95318"/>
+    <rect x="80" y="20" width="48" height="24" rx="4" fill="#26262a"/>
+    <path d="M110 20V2M104 2h16" stroke="#26262a" stroke-width="5"/>
+    <circle cx="30" cy="48" r="14" fill="#1d1d20"/><circle cx="30" cy="48" r="5" fill="#48484e"/>
+    <circle cx="112" cy="48" r="14" fill="#1d1d20"/><circle cx="112" cy="48" r="5" fill="#48484e"/>
+  </g>
+</svg>

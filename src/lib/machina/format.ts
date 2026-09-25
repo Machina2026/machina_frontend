@@ -5,6 +5,16 @@ const eurFmt = new Intl.NumberFormat("en-GB", { style: "currency", currency: "EU
 export const eur = (n: number | null | undefined) =>
   n === null || n === undefined || Number.isNaN(n) ? "—" : eurFmt.format(n)
 
+const eurWholeFmt = new Intl.NumberFormat("en-GB", {
+  style: "currency",
+  currency: "EUR",
+  maximumFractionDigits: 0,
+})
+
+/** Rounded euros for headline prices ("€250"); use `eur` wherever the cents matter. */
+export const eurWhole = (n: number | null | undefined) =>
+  n === null || n === undefined || Number.isNaN(n) ? "—" : eurWholeFmt.format(n)
+
 export const num = (n: number | null | undefined, maxDecimals = 2) =>
   n === null || n === undefined
     ? "—"

@@ -1,11 +1,13 @@
 "use client"
 
+import { ArrowRight, SendHorizontal, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { KV, MarkList, PageHead } from "@/components/app/bits"
+import { MachinePhoto } from "@/components/app/model-image"
 import { LoadingState } from "@/components/states/loading-state"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -15,7 +17,7 @@ import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { api } from "@/lib/machina/api"
 import { addToDraft, readDraft, saveDraft } from "@/lib/machina/draft"
-import { eur } from "@/lib/machina/format"
+import { eur, stripDemo } from "@/lib/machina/format"
 import { useMeta } from "@/lib/machina/hooks"
 import type {
   AssistantQuestion,
@@ -195,6 +197,7 @@ function Assistant() {
   return (
     <>
       <PageHead
+        eyebrow="Job assistant"
         title="Describe your job"
         actions={
           <Button size="sm" onClick={() => update(EMPTY)}>
@@ -223,8 +226,24 @@ function Assistant() {
       )}
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="bg-card flex h-[min(70dvh,640px)] flex-col overflow-hidden rounded-lg border">
-          <div ref={logRef} aria-live="polite" className="flex-1 space-y-3 overflow-y-auto p-4">
+        <div className="bg-card shadow-lift border-border/70 flex h-[min(72dvh,660px)] flex-col overflow-hidden rounded-3xl border">
+          <div className="bg-ink flex items-center gap-3 px-5 py-3.5 text-white">
+            <span className="from-primary inline-flex size-9 items-center justify-center rounded-xl bg-gradient-to-br to-[#f0a052]">
+              <Sparkles aria-hidden className="size-4" />
+            </span>
+            <div className="leading-tight">
+              <b className="block text-[0.95rem]">Machina assistant</b>
+              <span className="text-ink-foreground/60 flex items-center gap-1.5 text-[0.78rem]">
+                <span className="size-1.5 rounded-full bg-emerald-400" aria-hidden />
+                {mode === "demo" ? "Guided demo" : "Online"} · suggests catalogue machines only
+              </span>
+            </div>
+          </div>
+          <div
+            ref={logRef}
+            aria-live="polite"
+            className="bg-dots flex-1 space-y-3 overflow-y-auto bg-[#faf8f4] p-5"
+          >
             {!conv.messages.length ? (
               <Bubble role="bot">
                 Hi! Describe the job: what you need to do, where the site is and when. If you
@@ -250,7 +269,7 @@ function Assistant() {
             {busy && <p className="text-muted-foreground text-sm">The assistant is typing…</p>}
           </div>
           <form
-            className="flex gap-2 border-t p-3"
+            className="flex items-end gap-2 border-t bg-white p-3"
             onSubmit={(e) => {
               e.preventDefault()
               const v = input
@@ -272,8 +291,8 @@ function Assistant() {
                 }
               }}
             />
-            <Button type="submit" variant="primary" disabled={busy}>
-              Send
+            <Button type="submit" variant="primary" disabled={busy} aria-label="Send">
+              <SendHorizontal aria-hidden /> <span className="max-sm:sr-only">Send</span>
             </Button>
           </form>
         </div>
@@ -284,9 +303,23 @@ function Assistant() {
             {r?.summary.length ? (
               <KV items={r.summary.map((s) => [s.label, s.value])} />
             ) : (
-              <p className="text-muted-foreground text-sm">
-                Location, period, work and needs will appear here as you describe them.
-              </p>
+              <>
+                <p className="text-muted-foreground text-sm">
+                  Location, period, work and needs will appear here as you describe them. The more
+                  you mention, the better the suggestion:
+                </p>
+                <MarkList
+                  tone="tick"
+                  className="text-sm"
+                  items={[
+                    "Town or site address",
+                    "Start date and how long",
+                    "What you need to do (dig, lift, compact…)",
+                    "Sizes: depth, height, narrowest passage",
+                    "Delivery and operator needs",
+                  ]}
+                />
+              </>
             )}
             {r && r.remaining.length > 0 && (
               <>
@@ -313,12 +346,9 @@ function Assistant() {
                 return (
                   <div key={s.modelId} className={cn("border-t py-3", !sel.on && "opacity-60")}>
                     <div className="flex gap-3">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={s.image}
-                        alt=""
-                        className="bg-accent h-12 w-[72px] shrink-0 rounded border object-cover"
-                      />
+                      <span className="bg-accent relative h-12 w-[72px] shrink-0 overflow-hidden rounded border">
+                        <MachinePhoto src={s.image} alt="" sizes="72px" />
+                      </span>
                       <div className="flex-1">
                         <Check
                           checked={sel.on}
@@ -345,7 +375,7 @@ function Assistant() {
                             (o) =>
                               [
                                 o.offerId,
-                                `${o.partnerName} — ${eur(o.day)}/day${o.inZone === false ? " (outside area)" : ""}`,
+                                `${stripDemo(o.partnerName)} — ${eur(o.day)}/day${o.inZone === false ? " (outside area)" : ""}`,
                               ] as const
                           )}
                         />
@@ -386,11 +416,11 @@ function Assistant() {
                 )
               })}
               <Button variant="primary" block className="mt-2" onClick={makeRequest}>
-                Prepare the request with the selected machines
+                Build my request <ArrowRight aria-hidden />
               </Button>
               <p className="text-faint mt-2 text-[0.8rem]">
-                Availability, final prices and technical suitability are confirmed by the partners
-                and by the competent professional.
+                Specs are indicative catalogue figures. Availability, final prices and technical
+                suitability are confirmed by the partners and by the competent professional.
               </p>
             </Card>
           )}
@@ -402,13 +432,25 @@ function Assistant() {
 
 function Bubble({ role, children }: { role: "user" | "bot"; children: React.ReactNode }) {
   return (
-    <div
-      className={cn(
-        "max-w-[85%] rounded-xl px-3.5 py-2.5 text-[0.95rem] whitespace-pre-wrap",
-        role === "user" ? "bg-primary ml-auto text-white" : "bg-muted border"
+    <div className={cn("flex items-end gap-2", role === "user" && "flex-row-reverse")}>
+      {role === "bot" && (
+        <span
+          aria-hidden
+          className="bg-ink inline-flex size-7 shrink-0 items-center justify-center rounded-full text-white"
+        >
+          <Sparkles className="size-3.5" />
+        </span>
       )}
-    >
-      {children}
+      <div
+        className={cn(
+          "max-w-[85%] px-4 py-3 text-[0.95rem] whitespace-pre-wrap shadow-[0_1px_2px_rgb(20_18_14/0.06)]",
+          role === "user"
+            ? "from-primary rounded-2xl rounded-br-md bg-gradient-to-br to-[#d9742f] text-white"
+            : "border-border/70 rounded-2xl rounded-bl-md border bg-white"
+        )}
+      >
+        {children}
+      </div>
     </div>
   )
 }
@@ -429,7 +471,7 @@ function Options({
           key={o}
           type="button"
           onClick={() => onPick(o)}
-          className="text-primary-hover hover:bg-primary-soft cursor-pointer rounded-full border border-[#f5d2b0] bg-white px-3 py-1 text-left text-sm"
+          className="text-primary-hover hover:bg-primary-soft hover:border-primary/50 cursor-pointer rounded-full border border-[#f5d2b0] bg-white px-3.5 py-1.5 text-left text-sm transition-colors"
         >
           {o}
         </button>

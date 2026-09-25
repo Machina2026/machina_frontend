@@ -1,13 +1,22 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { ClipboardList } from "lucide-react"
+import {
+  ClipboardCheck,
+  Hourglass,
+  ListChecks,
+  MessageSquareQuote,
+  Package,
+  Receipt,
+  TriangleAlert,
+  Truck,
+} from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { PageHead, Small, TableWrap } from "@/components/app/bits"
-import { ActionList, Stat, StatGrid } from "@/components/app/dashboard"
+import { ActionList, PanelTitle, Stat, StatGrid, WelcomeBanner } from "@/components/app/dashboard"
 import { QueryView } from "@/components/app/query-view"
 import { StatusBadge } from "@/components/app/status-badge"
 import { useBuyerSummary } from "@/components/layout/dash-shell"
@@ -37,62 +46,89 @@ export function BuyerOverview() {
     <QueryView query={summary}>
       {(s) => (
         <>
-          <PageHead
-            title="Activity overview"
+          <WelcomeBanner
+            name={me?.user.name}
+            org={me?.org.name}
+            subtitle={
+              s.actions.length
+                ? `You have ${s.actions.length} thing${s.actions.length === 1 ? "" : "s"} to do. Everything else is on track.`
+                : "Nothing needs your attention right now."
+            }
             actions={
               <>
-                <Link href="/assistant" className={buttonVariants()}>
-                  Describe a job
-                </Link>
                 <Link href="/catalog" className={buttonVariants({ variant: "primary" })}>
                   Search for a machine
                 </Link>
+                <Link href="/assistant" className={buttonVariants({ variant: "glass" })}>
+                  Describe a job
+                </Link>
               </>
             }
-          >
-            {me?.org.name}
-          </PageHead>
+          />
           <StatGrid>
             <Stat
               n={s.counts.quotesToEvaluate}
               label="Quotes to review"
               href="/buyer/requests"
+              icon={MessageSquareQuote}
               hot
             />
             <Stat
               n={s.counts.waitingPartner}
               label="Parts awaiting partners"
               href="/buyer/requests"
+              icon={Hourglass}
             />
-            <Stat n={s.counts.activeOrders} label="Active orders" href="/buyer/orders" />
+            <Stat
+              n={s.counts.activeOrders}
+              label="Active orders"
+              href="/buyer/orders"
+              icon={Truck}
+            />
             <Stat
               n={s.counts.changesToApprove}
               label="Changes to approve"
               href="/buyer/changes"
+              icon={ClipboardCheck}
               hot
             />
             <Stat
               n={s.counts.chargesToVerify}
               label="Charges to review"
               href="/buyer/changes"
+              icon={TriangleAlert}
               hot
             />
-            <Stat n={s.counts.paymentsOpen} label="Unpaid orders" href="/buyer/documents" />
+            <Stat
+              n={s.counts.paymentsOpen}
+              label="Unpaid orders"
+              href="/buyer/documents"
+              icon={Receipt}
+            />
           </StatGrid>
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
-              <h3>To do</h3>
+              <PanelTitle icon={ListChecks}>To do</PanelTitle>
               <ActionList actions={s.actions} />
             </Card>
             <Card>
-              <h3>Latest orders</h3>
+              <PanelTitle
+                icon={Package}
+                aside={
+                  <Link href="/buyer/orders" className="text-sm font-medium">
+                    All orders
+                  </Link>
+                }
+              >
+                Latest orders
+              </PanelTitle>
               {s.recentOrders.length ? (
-                <div className="divide-y">
+                <div className="space-y-2">
                   {s.recentOrders.map((o) => (
                     <Link
                       key={o.id}
                       href={`/buyer/orders/${o.id}`}
-                      className="text-foreground hover:bg-muted flex justify-between gap-3 py-2.5 no-underline hover:no-underline"
+                      className="text-foreground border-border/70 hover:border-primary/40 hover:bg-primary-soft/40 flex justify-between gap-3 rounded-xl border px-3.5 py-3 no-underline transition-colors hover:no-underline"
                     >
                       <span>
                         <b>{o.code}</b> · {o.partnerName}
@@ -156,7 +192,7 @@ export function BuyerRequests() {
                     className="clickable"
                     onClick={() => router.push(`/buyer/requests/${r.id}`)}
                   >
-                    <td>
+                    <td className="whitespace-nowrap">
                       <Link
                         href={`/buyer/requests/${r.id}`}
                         className="text-foreground font-semibold"
@@ -167,6 +203,11 @@ export function BuyerRequests() {
                         {date(r.createdAt)}
                         {r.source === "assistant" && " · assistant"}
                       </Small>
+                      {r.parts.some((p) => p.status === "sent") && (
+                        <Badge tone="accent" className="mt-1.5">
+                          Quote to review
+                        </Badge>
+                      )}
                     </td>
                     <td>{r.site.name}</td>
                     <td className="whitespace-nowrap">
@@ -189,7 +230,7 @@ export function BuyerRequests() {
             </TableWrap>
           ) : (
             <EmptyState
-              icon={ClipboardList}
+              image="/img/empty-request.svg"
               title="You haven't sent any requests yet."
               action={
                 <Link href="/catalog" className={buttonVariants({ variant: "primary" })}>
@@ -232,7 +273,7 @@ export function BuyerOrders() {
                     className="clickable"
                     onClick={() => router.push(`/buyer/orders/${o.id}`)}
                   >
-                    <td>
+                    <td className="whitespace-nowrap">
                       <Link
                         href={`/buyer/orders/${o.id}`}
                         className="text-foreground font-semibold"
@@ -319,31 +360,65 @@ export function BuyerChanges() {
                 ),
               })),
           ])
-          if (!items.length) return <EmptyState title="Nothing pending." />
+          if (!items.length) {
+            return (
+              <EmptyState
+                title="Nothing to approve"
+                description="Extensions, added services and extra charges from rental companies will appear here."
+              />
+            )
+          }
+          // Split what needs the customer's decision from what is back with the rental company.
+          const groups = [
+            {
+              title: "Waiting for you",
+              hint: "Accept or reject: only what you accept changes the agreed total.",
+              items: items.filter((i) => i.open),
+            },
+            {
+              title: "Waiting for the rental company",
+              hint: "Your requests to price and your disputed charges.",
+              items: items.filter((i) => !i.open),
+            },
+          ].filter((g) => g.items.length)
           return (
-            <div className="space-y-3">
-              {items.map(({ o, key, open, code, badge, text }) => (
-                <Card key={key} flat className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <b>{code}</b>
-                      {badge}
-                      <span className="text-muted-foreground text-sm">
-                        {o.code} · {o.partnerName}
-                      </span>
-                    </div>
-                    <div className="text-sm">{text}</div>
+            <div className="space-y-8">
+              {groups.map((g) => (
+                <section key={g.title}>
+                  <h2 className="mb-1 text-[1.35rem]">
+                    {g.title} <span className="text-muted-foreground">({g.items.length})</span>
+                  </h2>
+                  <Small className="mb-3">{g.hint}</Small>
+                  <div className="space-y-3">
+                    {g.items.map(({ o, key, open, code, badge, text }) => (
+                      <Card
+                        key={key}
+                        flat={!open}
+                        className="flex flex-wrap items-center justify-between gap-3"
+                      >
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <b>{code}</b>
+                            {badge}
+                            <span className="text-muted-foreground text-sm">
+                              {o.code} · {stripDemo(o.partnerName)}
+                            </span>
+                          </div>
+                          <div className="mt-1 text-[0.95rem]">{text}</div>
+                        </div>
+                        <Link
+                          href={`/buyer/orders/${o.id}`}
+                          className={buttonVariants({
+                            size: "sm",
+                            variant: open ? "primary" : "default",
+                          })}
+                        >
+                          {open ? "Review in order" : "Open order"}
+                        </Link>
+                      </Card>
+                    ))}
                   </div>
-                  <Link
-                    href={`/buyer/orders/${o.id}`}
-                    className={buttonVariants({
-                      size: "sm",
-                      variant: open ? "primary" : "default",
-                    })}
-                  >
-                    Open order
-                  </Link>
-                </Card>
+                </section>
               ))}
             </div>
           )

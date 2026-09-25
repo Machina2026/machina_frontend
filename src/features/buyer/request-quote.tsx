@@ -285,35 +285,80 @@ export function BuyerQuoteDetail({ id }: { id: string }) {
                   <h3>Versions</h3>
                   <VersionsList quote={qt} />
                 </Card>
-                {qt.status === "sent" && (
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="ok" size="lg" onClick={() => setDialog("accept")}>
-                      Accept quote
-                    </Button>
-                    <Button variant="danger" size="lg" onClick={() => setDialog("reject")}>
-                      Reject
-                    </Button>
-                  </div>
-                )}
-                {qt.status === "awaiting_partner" && (
-                  <Button
-                    variant="danger"
-                    disabled={withdraw.isPending}
-                    onClick={async () => {
-                      const ok = await confirm({
-                        title: "Cancel this part?",
-                        body: "The partner no longer needs to check it. The other parts of the request don't change.",
-                        confirmLabel: "Cancel part",
-                        danger: true,
-                      })
-                      if (ok) withdraw.mutate()
-                    }}
-                  >
-                    Cancel this part of the request
-                  </Button>
-                )}
+                <Card>
+                  <h3>History</h3>
+                  <Timeline entries={qt.history} />
+                </Card>
               </div>
-              <aside className="space-y-4">
+              <aside className="space-y-4 lg:sticky lg:top-[88px]">
+                <Card className={qt.status === "sent" ? "ring-primary/25 ring-2" : undefined}>
+                  <div className="eyebrow mb-1">
+                    {qt.status === "sent"
+                      ? "Your decision"
+                      : v.kind === "draft"
+                        ? "Machina draft"
+                        : `Quote v${v.n}`}
+                  </div>
+                  <div className="font-heading text-[2rem] leading-none font-medium">
+                    {eur(v.totals.gross)}
+                  </div>
+                  <Small className="mt-1.5">
+                    {eur(v.totals.net)} + VAT {v.totals.vatRate}%
+                    {!v.totals.complete && " · partial, some lines still to price"}
+                  </Small>
+                  {qt.status === "sent" && v.validUntil && (
+                    <p className="mt-3 mb-0 text-sm">
+                      Valid until <b>{date(v.validUntil)}</b>. Accepting locks the price and creates
+                      the order.
+                    </p>
+                  )}
+                  {qt.status === "sent" && (
+                    <div className="mt-4 grid gap-2">
+                      <Button variant="ok" size="lg" block onClick={() => setDialog("accept")}>
+                        Accept quote
+                      </Button>
+                      <Button variant="danger" block onClick={() => setDialog("reject")}>
+                        Reject
+                      </Button>
+                    </div>
+                  )}
+                  {qt.status === "awaiting_partner" && (
+                    <>
+                      <p className="text-muted-foreground mt-3 mb-3 text-sm">
+                        Waiting for {qt.partnerName} to confirm availability and send the final
+                        price.
+                      </p>
+                      <Button
+                        variant="danger"
+                        block
+                        disabled={withdraw.isPending}
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: "Cancel this part?",
+                            body: "The partner no longer needs to check it. The other parts of the request don't change.",
+                            confirmLabel: "Cancel part",
+                            danger: true,
+                          })
+                          if (ok) withdraw.mutate()
+                        }}
+                      >
+                        Cancel this part of the request
+                      </Button>
+                    </>
+                  )}
+                  {qt.orderId && (
+                    <Link
+                      href={`/buyer/orders/${qt.orderId}`}
+                      className={buttonVariants({
+                        variant: "primary",
+                        block: true,
+                        className: "mt-4",
+                      })}
+                    >
+                      Go to the order
+                    </Link>
+                  )}
+                </Card>
                 <Card>
                   <h3>Period and site</h3>
                   <KV
@@ -321,10 +366,6 @@ export function BuyerQuoteDetail({ id }: { id: string }) {
                     items={[["Period", `${date(qt.period.from)} → ${date(qt.period.to)}`]]}
                   />
                   <SiteBlock site={qt.site} needs={qt.needs} />
-                </Card>
-                <Card>
-                  <h3>History</h3>
-                  <Timeline entries={qt.history} />
                 </Card>
               </aside>
             </div>

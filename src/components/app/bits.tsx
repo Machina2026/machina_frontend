@@ -7,16 +7,20 @@ import { cn } from "@/lib/utils"
 /** Page title row: title, optional subtitle and actions. */
 export function PageHead({
   title,
+  eyebrow,
   children,
   actions,
 }: {
   title: React.ReactNode
+  /** Small label above the title. */
+  eyebrow?: React.ReactNode
   children?: React.ReactNode
   actions?: React.ReactNode
 }) {
   return (
     <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
+        {eyebrow && <div className="eyebrow mb-2.5">{eyebrow}</div>}
         <h1 className="mb-2">{title}</h1>
         {children && (
           <div className="text-muted-foreground max-w-[760px] text-[1.02rem]">{children}</div>
@@ -32,17 +36,26 @@ export function Crumbs({ items }: { items: (readonly [string, string?])[] }) {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="text-muted-foreground mb-3 text-[0.85rem] tracking-wide"
+      className="text-muted-foreground mb-4 flex flex-wrap items-center gap-1.5 text-[0.85rem]"
     >
       {items.map(([label, href], i) => (
         <React.Fragment key={i}>
-          {i > 0 && " › "}
+          {i > 0 && (
+            <span aria-hidden className="text-faint/70">
+              /
+            </span>
+          )}
           {href ? (
-            <Link href={href} className="text-muted-foreground hover:underline">
+            <Link
+              href={href}
+              className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md px-1.5 py-0.5 no-underline hover:no-underline"
+            >
               {label}
             </Link>
           ) : (
-            <span aria-current="page">{label}</span>
+            <span aria-current="page" className="text-foreground px-1.5 font-medium">
+              {label}
+            </span>
           )}
         </React.Fragment>
       ))}
@@ -86,7 +99,7 @@ export function TableWrap({
   return (
     <div
       className={cn(
-        "border-border/70 bg-card shadow-soft overflow-x-auto rounded-xl border",
+        "border-border/70 bg-card shadow-soft overflow-x-auto rounded-2xl border",
         className
       )}
     >

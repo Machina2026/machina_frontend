@@ -1,13 +1,22 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  FileWarning,
+  GitPullRequestArrow,
+  Inbox,
+  ListChecks,
+  Send,
+  TriangleAlert,
+  Truck,
+} from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { useConfirm } from "@/components/app/confirm"
 import { PageHead, Small, TableWrap } from "@/components/app/bits"
-import { ActionList, Stat, StatGrid } from "@/components/app/dashboard"
+import { ActionList, PanelTitle, Stat, StatGrid, WelcomeBanner } from "@/components/app/dashboard"
 import { QueryView } from "@/components/app/query-view"
 import { StatusBadge } from "@/components/app/status-badge"
 import { useSupplierSummary } from "@/components/layout/dash-shell"
@@ -46,42 +55,71 @@ export function SupplierOverview() {
     <QueryView query={summary}>
       {(s) => (
         <>
-          <PageHead
-            title="Activity overview"
-            actions={
-              <Link
-                href="/supplier/equipment/new"
-                className={buttonVariants({ variant: "primary" })}
-              >
-                Add a machine
-              </Link>
+          <WelcomeBanner
+            name={me?.user.name}
+            org={me?.org.name}
+            subtitle={
+              s.counts.newRequests
+                ? `${s.counts.newRequests} new request${s.counts.newRequests === 1 ? " is" : "s are"} waiting for your quote.`
+                : "No new requests right now. Keep your prices up to date to win the next one."
             }
-          >
-            {me?.org.name}
-          </PageHead>
+            actions={
+              <>
+                <Link href="/supplier/quotes" className={buttonVariants({ variant: "primary" })}>
+                  Review requests
+                </Link>
+                <Link
+                  href="/supplier/equipment/new"
+                  className={buttonVariants({ variant: "glass" })}
+                >
+                  Add a machine
+                </Link>
+              </>
+            }
+          />
           <StatGrid>
-            <Stat n={s.counts.newRequests} label="Requests to review" href="/supplier/quotes" hot />
+            <Stat
+              n={s.counts.newRequests}
+              label="Requests to review"
+              href="/supplier/quotes"
+              icon={Inbox}
+              hot
+            />
             <Stat
               n={s.counts.awaitingClient}
               label="Quotes awaiting the customer"
               href="/supplier/quotes?tab=sent"
+              icon={Send}
             />
-            <Stat n={s.counts.activeOrders} label="Active orders" href="/supplier/orders" />
-            <Stat n={s.counts.changesOpen} label="Open changes" href="/supplier/changes" hot />
+            <Stat
+              n={s.counts.activeOrders}
+              label="Active orders"
+              href="/supplier/orders"
+              icon={Truck}
+            />
+            <Stat
+              n={s.counts.changesOpen}
+              label="Open changes"
+              href="/supplier/changes"
+              icon={GitPullRequestArrow}
+              hot
+            />
             <Stat
               n={s.counts.chargesContested}
               label="Disputed charges"
               href="/supplier/changes"
+              icon={TriangleAlert}
               hot
             />
             <Stat
               n={s.counts.invoicesMissing}
               label="Orders without an uploaded invoice"
               href="/supplier/documents"
+              icon={FileWarning}
             />
           </StatGrid>
           <Card>
-            <h3>To do</h3>
+            <PanelTitle icon={ListChecks}>To do</PanelTitle>
             <ActionList actions={s.actions} />
           </Card>
           <Small className="mt-3">
@@ -122,7 +160,10 @@ export function SupplierQuotes({ tab }: { tab?: string }) {
           const list = quotes.filter((x) => active.statuses.includes(x.status))
           return (
             <>
-              <div className="mb-4 flex flex-wrap gap-1 border-b" role="tablist">
+              <div
+                className="bg-muted mb-5 inline-flex flex-wrap gap-1 rounded-xl p-1"
+                role="tablist"
+              >
                 {TABS.map((t) => (
                   <Link
                     key={t.id}
@@ -130,10 +171,9 @@ export function SupplierQuotes({ tab }: { tab?: string }) {
                     role="tab"
                     aria-selected={t === active}
                     className={cn(
-                      "text-foreground -mb-px border-b-2 px-3 py-2 no-underline hover:no-underline",
-                      t === active
-                        ? "border-primary text-primary-hover font-semibold"
-                        : "border-transparent"
+                      "text-muted-foreground hover:text-foreground rounded-lg px-3.5 py-2 text-[0.92rem] no-underline hover:no-underline",
+                      t === active &&
+                        "text-foreground bg-white font-semibold shadow-[0_1px_3px_rgb(20_18_14/0.12)]"
                     )}
                   >
                     {t.label} ({quotes.filter((x) => t.statuses.includes(x.status)).length})

@@ -1,7 +1,7 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { X } from "lucide-react"
+import { ImagePlus, X } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useRef, useState } from "react"
@@ -461,7 +461,7 @@ function EditorForm({
           <h3>Model</h3>
           {isNew ? (
             <>
-              <div className="mb-3 flex gap-1 border-b" role="tablist">
+              <div className="bg-muted mb-4 inline-flex gap-1 rounded-xl p-1" role="tablist">
                 {(["existing", "new"] as const).map((x) => (
                   <button
                     key={x}
@@ -470,10 +470,9 @@ function EditorForm({
                     aria-selected={mode === x}
                     onClick={() => setMode(x)}
                     className={cn(
-                      "-mb-px cursor-pointer border-b-2 px-3 py-2",
-                      mode === x
-                        ? "border-primary text-primary-hover font-semibold"
-                        : "border-transparent"
+                      "text-muted-foreground hover:text-foreground cursor-pointer rounded-lg px-3.5 py-2 text-[0.92rem]",
+                      mode === x &&
+                        "text-foreground bg-white font-semibold shadow-[0_1px_3px_rgb(20_18_14/0.12)]"
                     )}
                   >
                     {x === "existing" ? "Catalogue model" : "New model"}
@@ -589,7 +588,11 @@ function EditorForm({
               "Round-trip transport price (€)",
               f.transport.price,
               (v) => set({ transport: { ...f.transport, price: v } }),
-              "transport.price"
+              "transport.price",
+              {
+                disabled: f.transport.mode !== "fixed",
+                placeholder: f.transport.mode === "fixed" ? "" : "Only for a fixed rate",
+              }
             )}
             {numField("Deposit (€, optional)", f.deposit, (v) => set({ deposit: v }), "deposit")}
             <Field label="Operator" htmlFor="of-omode" error={errors["operator.mode"]}>
@@ -611,7 +614,11 @@ function EditorForm({
               "Operator price per day (€)",
               f.operator.pricePerDay,
               (v) => set({ operator: { ...f.operator, pricePerDay: v } }),
-              "operator.pricePerDay"
+              "operator.pricePerDay",
+              {
+                disabled: f.operator.mode !== "available",
+                placeholder: f.operator.mode === "available" ? "" : "Only when available",
+              }
             )}
             {numField("Units available (indicative)", f.units, (v) => set({ units: v }), "units", {
               min: 1,
@@ -769,33 +776,48 @@ function EditorForm({
                 </div>
               ))}
             </div>
-            <Field label="Add photos (JPG/PNG, max 5 MB)" htmlFor="of-photos" className="mt-3 mb-0">
+            <label
+              htmlFor="of-photos"
+              className="border-border-strong bg-secondary hover:border-primary hover:bg-primary-soft focus-within:border-primary mt-3 flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors"
+            >
+              <ImagePlus aria-hidden className="text-primary size-7" />
+              <span className="font-semibold">
+                {photos.isPending ? "Uploading…" : "Add photos of this machine"}
+              </span>
+              <span className="text-muted-foreground text-sm">
+                JPG, PNG or WebP, up to 5 MB each. Customers see the first photo in the catalogue.
+              </span>
               <input
                 ref={photoInput}
                 id="of-photos"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 multiple
-                className="text-sm"
+                className="sr-only"
                 onChange={(e) => {
                   const files = Array.from(e.target.files ?? [])
                   if (files.length) photos.mutate(files)
                   if (photoInput.current) photoInput.current.value = ""
                 }}
               />
-            </Field>
+            </label>
           </Card>
         ) : (
           <Small>You can add photos after saving the machine for the first time.</Small>
         )}
 
-        <div className="flex flex-wrap gap-2">
+        <div className="border-border/80 shadow-lift sticky bottom-0 z-10 -mx-1 flex flex-wrap items-center gap-2 rounded-xl border bg-white/90 px-4 py-3 backdrop-blur">
           <Button type="submit" variant="primary" size="lg" disabled={save.isPending}>
-            Save machine
+            {save.isPending ? "Saving…" : "Save machine"}
           </Button>
           <Link href="/supplier/equipment" className={buttonVariants({ size: "lg" })}>
             Cancel
           </Link>
+          {Object.keys(errors).length > 0 && (
+            <span className="text-bad text-sm">
+              Some fields need attention: check the highlighted ones.
+            </span>
+          )}
         </div>
       </form>
     </>

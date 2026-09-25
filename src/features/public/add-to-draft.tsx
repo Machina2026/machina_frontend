@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -33,6 +34,7 @@ export function AddToDraftDialog({
   preset?: DraftPreset
   onClose: () => void
 }) {
+  const router = useRouter()
   const opMode = offer.operator.mode
   const [qty, setQty] = useState(String(preset.qty ?? 1))
   const [acc, setAcc] = useState<string[]>(
@@ -60,7 +62,9 @@ export function AddToDraftDialog({
       },
       { from: preset.from, to: preset.to }
     )
-    toast.success("Added to the request")
+    toast.success("Added to the request", {
+      action: { label: "View request", onClick: () => router.push("/request") },
+    })
     onClose()
   }
 

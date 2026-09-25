@@ -1,6 +1,7 @@
 "use client"
 
 import { useMutation, useQuery } from "@tanstack/react-query"
+import { Scale } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
@@ -74,9 +75,11 @@ export function CompareView({ query }: { query: Record<string, string> }) {
   if (!offerIds.length) {
     return (
       <EmptyState
-        title="No offers to compare."
+        icon={Scale}
+        title="Nothing to compare yet"
+        description="Open a machine with more than one offer and pick the offers to compare side by side."
         action={
-          <Link href="/catalog" className={buttonVariants()}>
+          <Link href="/catalog" className={buttonVariants({ variant: "primary" })}>
             Go to the catalogue
           </Link>
         }
@@ -213,6 +216,12 @@ function CompareResults({
   onAdd: (r: CompareRow) => void
 }) {
   const R = res.results
+  // Cheapest offer whose total is complete (partial estimates can't be compared fairly).
+  const complete = R.filter((r) => r.totals.complete)
+  const bestId =
+    complete.length > 1
+      ? complete.reduce((a, b) => (b.totals.gross < a.totals.gross ? b : a)).offer.id
+      : null
   const lineAmt = (r: CompareRow, type: LineType) => {
     const ls = r.lines.filter((l) => l.type === type)
     if (!ls.length) return null
@@ -267,7 +276,8 @@ function CompareResults({
       "Minimum rental",
       (r) => (
         <>
-          {r.offer.minDays} days {r.offer.minDays > r.days && <Badge tone="warn">applied</Badge>}
+          {r.offer.minDays} {r.offer.minDays === 1 ? "day" : "days"}{" "}
+          {r.offer.minDays > r.days && <Badge tone="warn">applied</Badge>}
         </>
       ),
     ],
@@ -342,7 +352,12 @@ function CompareResults({
           </Small>
           {r.totals.complete ? (
             <div>
-              Estimated total: <b>{eur(r.totals.gross)}</b>
+              Estimated total: <b className="text-[1.05rem]">{eur(r.totals.gross)}</b>
+              {r.offer.id === bestId && (
+                <div className="mt-1">
+                  <Badge tone="ok">Best estimate</Badge>
+                </div>
+              )}
             </div>
           ) : (
             <div>
@@ -384,7 +399,10 @@ function CompareResults({
             <tr>
               <th />
               {R.map((r) => (
-                <th key={r.offer.id}>{r.offer.partner.name}</th>
+                <th key={r.offer.id} className={r.offer.id === bestId ? "text-ok!" : undefined}>
+                  {r.offer.partner.name}
+                  {r.offer.id === bestId && " · best estimate"}
+                </th>
               ))}
             </tr>
           </thead>

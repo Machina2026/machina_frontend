@@ -1,19 +1,21 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
+import { ArrowDown, HardHat, MapPin, Plus, Puzzle, Ruler, Scale } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 
 import { Crumbs, DemoBadge, KV, MarkList, Small } from "@/components/app/bits"
-import { ModelImage } from "@/components/app/model-image"
+import { PanelTitle } from "@/components/app/dashboard"
+import { MachinePhoto } from "@/components/app/model-image"
 import { QueryView } from "@/components/app/query-view"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Check } from "@/components/ui/field"
 import { api, fileUrl, qs } from "@/lib/machina/api"
-import { eur, num } from "@/lib/machina/format"
+import { eur, eurWhole, num, stripDemo } from "@/lib/machina/format"
 import { useMeta } from "@/lib/machina/hooks"
 import { OPERATOR_MODE, TRANSPORT_MODE } from "@/lib/machina/labels"
 import type { ModelDetail, PublicModel, PublicOffer } from "@/lib/machina/types"
@@ -24,7 +26,7 @@ function OfferDetails({ o, prov }: { o: PublicOffer; prov: string }) {
   const inZone = prov ? o.zones.includes(prov) : null
   return (
     <>
-      <div className="my-3 grid gap-3 text-[0.92rem] sm:grid-cols-2 lg:grid-cols-3">
+      <div className="bg-secondary border-border/70 my-4 grid gap-4 rounded-xl border p-4 text-[0.92rem] sm:grid-cols-2 lg:grid-cols-3">
         <Detail k="Rates (excl. VAT)">
           {eur(o.prices.day)}/day
           {o.prices.week && (
@@ -123,52 +125,123 @@ export function ModelDetailView({ id, query }: { id: string; query: Record<strin
                 [`${m.brand} ${m.model}`],
               ]}
             />
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-              <ModelImage src={m.image} alt={`${m.brand} ${m.model}`} />
-              <div>
-                <Small>
-                  {catName} · {m.subtype} {m.demo && <DemoBadge />}
-                </Small>
-                <h1 className="my-1">
+            <section className="border-border/70 bg-card shadow-lift mb-6 grid overflow-hidden rounded-3xl border lg:grid-cols-[1.05fr_1fr]">
+              <div className="bg-ink relative aspect-[3/2] overflow-hidden lg:aspect-auto lg:min-h-[420px]">
+                <MachinePhoto
+                  src={m.image}
+                  alt={`${catName}: illustrative photo`}
+                  sizes="(min-width: 1024px) 640px, 100vw"
+                  fit="contain"
+                  eager
+                />
+                <span className="absolute bottom-3 left-3 rounded-md bg-black/55 px-2 py-0.5 text-[0.72rem] text-white/90">
+                  Illustrative photo · not the exact model
+                </span>
+              </div>
+              <div className="flex flex-col p-6 sm:p-8">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge tone="accent">{catName}</Badge>
+                  <Badge>{m.subtype}</Badge>
+                  {m.demo && <DemoBadge />}
+                </div>
+                <h1 className="mt-3 mb-2 text-[2.3rem] sm:text-[2.8rem]">
                   {m.brand} {m.model}
                 </h1>
-                <p>{m.description}</p>
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div>
-                    <h4 className="mb-2">Specifications</h4>
-                    <KV
-                      items={m.specList.map((s) => [
-                        s.label,
-                        `${typeof s.value === "number" ? num(s.value) : s.value} ${s.unit}`,
-                      ])}
-                    />
-                    <Small className="text-faint mt-2">
-                      Indicative figures: check the manufacturer&apos;s sheet and the rental
-                      company.
-                    </Small>
-                  </div>
-                  <div>
-                    <h4 className="mb-2">Suitable jobs</h4>
-                    <MarkList tone="tick" items={m.jobs} />
-                    <h4 className="mt-3 mb-2">Limitations</h4>
-                    <MarkList items={m.limits} />
-                  </div>
-                </div>
-                {accessories.length > 0 && (
-                  <>
-                    <h4 className="mt-3 mb-2">Compatible accessories</h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {accessories.map((a) => (
-                        <Badge key={a.id}>{a.name}</Badge>
-                      ))}
+                <p className="text-muted-foreground mb-5 text-[1.03rem]">{m.description}</p>
+                <div className="mb-5 grid grid-cols-2 gap-2.5">
+                  {m.specList.slice(0, 4).map((sp) => (
+                    <div key={sp.key} className="bg-muted/70 rounded-xl px-3.5 py-2.5">
+                      <div className="text-muted-foreground text-[0.74rem]">{sp.label}</div>
+                      <div className="text-[1.05rem] font-semibold">
+                        {typeof sp.value === "number" ? num(sp.value) : sp.value}
+                        {sp.unit && (
+                          <span className="text-muted-foreground text-[0.85rem] font-normal">
+                            {" "}
+                            {sp.unit}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </>
+                  ))}
+                </div>
+                {offers.length > 0 && (
+                  <div className="bg-ink text-ink-foreground relative mt-auto flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-2xl p-5">
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_120%_at_100%_0%,rgb(236_116_48/0.35),transparent_70%)]"
+                    />
+                    <div className="relative">
+                      <div className="text-ink-foreground/65 text-[0.82rem]">
+                        {offers.length} {offers.length === 1 ? "offer" : "offers"} · from
+                      </div>
+                      <div className="font-heading text-sun text-[2.2rem] leading-none font-medium">
+                        {eurWhole(Math.min(...offers.map((o) => o.prices.day ?? Infinity)))}
+                        <span className="text-ink-foreground/60 font-sans text-sm">
+                          {" "}
+                          /day excl. VAT
+                        </span>
+                      </div>
+                    </div>
+                    <a
+                      href="#offers"
+                      className={buttonVariants({
+                        variant: "primary",
+                        size: "lg",
+                        className: "relative",
+                      })}
+                    >
+                      See the offers <ArrowDown aria-hidden />
+                    </a>
+                  </div>
                 )}
               </div>
+            </section>
+
+            <div className="mb-10 grid gap-4 lg:grid-cols-3">
+              <Card>
+                <PanelTitle icon={Ruler}>Specifications</PanelTitle>
+                <KV
+                  items={m.specList.map((sp) => [
+                    sp.label,
+                    `${typeof sp.value === "number" ? num(sp.value) : sp.value} ${sp.unit}`,
+                  ])}
+                />
+                <Small className="text-faint mt-3">
+                  Indicative figures: check the manufacturer&apos;s sheet and the rental company.
+                </Small>
+              </Card>
+              <Card>
+                <PanelTitle icon={HardHat}>Suitable jobs</PanelTitle>
+                <MarkList tone="tick" items={m.jobs} className="space-y-1.5" />
+                <h4 className="mt-5 mb-2 text-[0.95rem]">Limitations</h4>
+                <MarkList items={m.limits} className="text-muted-foreground" />
+              </Card>
+              <Card>
+                <PanelTitle icon={Puzzle}>Compatible accessories</PanelTitle>
+                {accessories.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {accessories.map((a) => (
+                      <Badge key={a.id} className="px-3 py-1 text-[0.8rem]">
+                        {a.name}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <Small>No accessories listed for this model.</Small>
+                )}
+              </Card>
             </div>
-            <hr className="border-border my-5" />
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="m-0">Rental company offers ({offers.length})</h2>
+
+            <div
+              id="offers"
+              className="mb-2 flex scroll-mt-28 flex-wrap items-end justify-between gap-3"
+            >
+              <div>
+                <div className="eyebrow mb-2">Rental companies</div>
+                <h2 className="m-0 text-[2rem]">
+                  {offers.length} {offers.length === 1 ? "offer" : "offers"} for this machine
+                </h2>
+              </div>
               {offers.length > 1 && (
                 <Button
                   onClick={() => {
@@ -178,27 +251,53 @@ export function ModelDetailView({ id, query }: { id: string; query: Record<strin
                     )
                   }}
                 >
-                  Compare selected offers
+                  <Scale aria-hidden /> Compare selected offers
                 </Button>
               )}
             </div>
-            <Small className="mb-3">
+            <Small className="mb-4">
               Demo prices excluding VAT. Availability is always to be confirmed by the partner.
             </Small>
             <div className="space-y-3.5">
-              {offers.map((o) => (
-                <Card key={o.id}>
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h3 className="m-0">
-                        {o.partner.name} {o.partner.demo && <DemoBadge />}{" "}
-                        {!o.partner.verified && <Badge tone="warn">Partner being verified</Badge>}
-                      </h3>
-                      <Small>
-                        Depot: {o.partner.city} ({o.partner.province})
-                      </Small>
+              {offers.map((o, i) => (
+                <Card
+                  key={o.id}
+                  className={i === 0 && offers.length > 1 ? "ring-primary/40 ring-2" : undefined}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <span
+                        aria-hidden
+                        className="bg-ink inline-flex size-12 shrink-0 items-center justify-center rounded-xl text-[0.95rem] font-bold text-white"
+                      >
+                        {stripDemo(o.partner.name)
+                          .split(/\s+/)
+                          .slice(0, 2)
+                          .map((w) => w[0])
+                          .join("")}
+                      </span>
+                      <div>
+                        <h3 className="m-0 flex flex-wrap items-center gap-2">
+                          {stripDemo(o.partner.name)}
+                          {i === 0 && offers.length > 1 && (
+                            <Badge tone="accent">Lowest daily rate</Badge>
+                          )}
+                          {!o.partner.verified && <Badge tone="warn">Partner being verified</Badge>}
+                        </h3>
+                        <Small className="flex items-center gap-1">
+                          <MapPin aria-hidden className="size-3.5" />
+                          Depot: {o.partner.city} ({o.partner.province})
+                        </Small>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-4">
+                      <div className="text-right leading-tight">
+                        <span className="font-heading text-[1.8rem] font-medium">
+                          {eur(o.prices.day)}
+                        </span>
+                        <span className="text-muted-foreground text-sm"> /day</span>
+                        {o.prices.week && <Small>{eur(o.prices.week)} /week</Small>}
+                      </div>
                       {offers.length > 1 && (
                         <Check
                           label="Compare"
@@ -213,7 +312,7 @@ export function ModelDetailView({ id, query }: { id: string; query: Record<strin
                         />
                       )}
                       <Button variant="primary" onClick={() => setAdding(o)}>
-                        Add to request
+                        <Plus aria-hidden /> Add to request
                       </Button>
                     </div>
                   </div>

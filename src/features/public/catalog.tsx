@@ -1,21 +1,22 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { SearchX, SlidersHorizontal } from "lucide-react"
+import { LayoutGrid, SlidersHorizontal } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 import { PageHead, Small } from "@/components/app/bits"
-import { ModelImage, SpecChips } from "@/components/app/model-image"
+import { MachinePhoto, SpecChips } from "@/components/app/model-image"
 import { QueryView } from "@/components/app/query-view"
 import { EmptyState } from "@/components/states/empty-state"
+import { Alert } from "@/components/ui/alert"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Check, Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { api, qs } from "@/lib/machina/api"
-import { daysBetween, eur, stripDemo } from "@/lib/machina/format"
+import { daysBetween, eur, eurWhole, stripDemo } from "@/lib/machina/format"
 import { useMeta } from "@/lib/machina/hooks"
 import type { CatalogResponse } from "@/lib/machina/types"
 import { cn } from "@/lib/utils"
@@ -47,7 +48,8 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
   return (
     <>
       <PageHead
-        title={cat ? cat.name : "Machinery catalogue"}
+        eyebrow="Catalogue"
+        title={cat ? cat.name : "Find the right machine"}
         actions={
           <Button className="lg:hidden" onClick={() => setOpen(true)}>
             <SlidersHorizontal /> Filters
@@ -57,6 +59,43 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
         Models available from our partners. Each model can have several offers with different prices
         and conditions.
       </PageHead>
+      <nav
+        aria-label="Categories"
+        className="-mx-4 mb-6 flex [scrollbar-width:none] gap-2 overflow-x-auto px-4 pb-1"
+      >
+        {[{ id: "", name: "All machines", image: "" }, ...(meta?.categories ?? [])].map((c) => {
+          const on = (query.cat ?? "") === c.id
+          return (
+            <Link
+              key={c.id || "all"}
+              href={`/catalog${qs({ ...keep, cat: c.id })}`}
+              aria-current={on ? "page" : undefined}
+              className={cn(
+                "inline-flex shrink-0 items-center gap-2 rounded-full border py-1.5 pr-4 pl-1.5 text-[0.88rem] font-medium no-underline transition-colors hover:no-underline",
+                on
+                  ? "bg-ink border-ink text-white"
+                  : "border-border bg-card text-foreground hover:border-primary/40"
+              )}
+            >
+              <span
+                className={cn(
+                  "inline-flex size-7 items-center justify-center overflow-hidden rounded-full",
+                  on ? "bg-white/15" : "bg-muted"
+                )}
+              >
+                {c.image ? (
+                  <span className="relative size-7">
+                    <MachinePhoto src={c.image} alt="" sizes="28px" />
+                  </span>
+                ) : (
+                  <LayoutGrid aria-hidden className="size-3.5" />
+                )}
+              </span>
+              {c.name}
+            </Link>
+          )
+        })}
+      </nav>
       <div className="grid items-start gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
         <form
           aria-label="Filters"
@@ -65,13 +104,15 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
             apply(filters)
           }}
           className={cn(
-            "bg-card rounded-lg border p-4 max-lg:fixed max-lg:inset-0 max-lg:z-40 max-lg:overflow-y-auto max-lg:rounded-none",
+            "bg-card border-border/70 shadow-soft rounded-2xl border p-5 max-lg:fixed max-lg:inset-0 max-lg:z-40 max-lg:overflow-y-auto max-lg:rounded-none lg:sticky lg:top-[96px]",
             !open && "max-lg:hidden"
           )}
         >
-          <div className="mb-2.5 flex items-center justify-between lg:hidden">
-            <h3 className="m-0">Filters</h3>
-            <Button size="sm" onClick={() => setOpen(false)}>
+          <div className="border-border/70 mb-4 flex items-center justify-between border-b pb-3">
+            <h3 className="m-0 flex items-center gap-2 text-[1.02rem]">
+              <SlidersHorizontal aria-hidden className="text-primary size-4" /> Filters
+            </h3>
+            <Button size="sm" className="lg:hidden" onClick={() => setOpen(false)}>
               Close
             </Button>
           </div>
@@ -99,7 +140,7 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
               <Select
                 id="f-sub"
                 value={filters.sub ?? ""}
-                onChange={(e) => set("sub", e.target.value)}
+                onChange={(e) => apply({ ...filters, sub: e.target.value })}
                 options={[["", "All"], ...cat.subtypes.map((s) => [s, s] as const)]}
               />
             </Field>
@@ -108,20 +149,20 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
             <Select
               id="f-prov"
               value={filters.prov ?? ""}
-              onChange={(e) => set("prov", e.target.value)}
+              onChange={(e) => apply({ ...filters, prov: e.target.value })}
               options={[
                 ["", "All of Piedmont"],
                 ...(meta?.provinces ?? []).map((p) => [p.id, `${p.name} (${p.id})`] as const),
               ]}
             />
           </Field>
-          <div className="grid grid-cols-2 gap-x-3">
+          <div className="grid gap-x-3 max-lg:grid-cols-2">
             <Field label="From" htmlFor="f-from">
               <Input
                 id="f-from"
                 type="date"
                 value={filters.from ?? ""}
-                onChange={(e) => set("from", e.target.value)}
+                onChange={(e) => apply({ ...filters, from: e.target.value })}
               />
             </Field>
             <Field label="To" htmlFor="f-to">
@@ -129,7 +170,7 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
                 id="f-to"
                 type="date"
                 value={filters.to ?? ""}
-                onChange={(e) => set("to", e.target.value)}
+                onChange={(e) => apply({ ...filters, to: e.target.value })}
               />
             </Field>
           </div>
@@ -137,7 +178,7 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
             className="mb-3.5"
             label="Available with an operator"
             checked={filters.operator === "1"}
-            onChange={(e) => set("operator", e.target.checked ? "1" : "")}
+            onChange={(e) => apply({ ...filters, operator: e.target.checked ? "1" : "" })}
           />
           <fieldset className="mb-3.5">
             <legend className="mb-1 text-[0.85rem] font-semibold">Daily price (€)</legend>
@@ -175,9 +216,12 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
               </Field>
             ))}
           </details>
+          <Small className="mb-3">
+            Lists update as you change them; press Search for text and number fields.
+          </Small>
           <div className="flex gap-2">
             <Button type="submit" variant="primary">
-              Apply
+              Search
             </Button>
             <Link href="/catalog" className={buttonVariants()} onClick={() => setFilters({})}>
               Reset
@@ -191,8 +235,9 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
               if (!data.results.length) {
                 return (
                   <EmptyState
-                    icon={SearchX}
-                    title="No model matches the selected filters."
+                    image="/img/empty-search.svg"
+                    title="No machine matches these filters"
+                    description="Try removing a filter, or describe the job and let the assistant pick the machines."
                     action={
                       <Link href="/assistant" className={buttonVariants()}>
                         Describe your job to the assistant
@@ -202,14 +247,41 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
                 )
               }
               const days = data.period ? daysBetween(data.period.from, data.period.to) : null
+              const sorted = [...data.results]
+              if (query.sort === "price")
+                sorted.sort((a, b) => (a.offers[0].day ?? 0) - (b.offers[0].day ?? 0))
+              if (query.sort === "price_desc")
+                sorted.sort((a, b) => (b.offers[0].day ?? 0) - (a.offers[0].day ?? 0))
               return (
                 <>
-                  <Small className="mb-3">
-                    {data.results.length} models · demo prices excluding VAT
-                    {days ? ` · estimate for ${days} calendar days` : ""}
-                  </Small>
-                  <div className="space-y-3.5">
-                    {data.results.map(({ model: m, offers }) => {
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <Small>
+                      <b className="text-foreground">{data.results.length}</b> models · demo prices
+                      excluding VAT
+                      {days ? ` · estimates for ${days} calendar days` : ""}
+                    </Small>
+                    <label className="text-muted-foreground flex items-center gap-2 text-sm">
+                      Sort by
+                      <Select
+                        className="min-h-9 w-auto py-1"
+                        value={query.sort ?? ""}
+                        onChange={(e) => apply({ ...filters, sort: e.target.value })}
+                        options={[
+                          ["", "Category"],
+                          ["price", "Lowest daily price"],
+                          ["price_desc", "Highest daily price"],
+                        ]}
+                      />
+                    </label>
+                  </div>
+                  {!days && (
+                    <Alert tone="info" size="sm" className="mb-4">
+                      Add your <b>rental dates</b> in the filters to see what each machine would
+                      cost for your period.
+                    </Alert>
+                  )}
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {sorted.map(({ model: m, offers }) => {
                       const best = offers[0]
                       const estimates = offers
                         .map((o) => o.estimate)
@@ -218,64 +290,90 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
                       return (
                         <article
                           key={m.id}
-                          className="border-border/70 bg-card shadow-soft hover:shadow-lift grid gap-5 rounded-xl border p-5 transition-shadow duration-200 md:grid-cols-[200px_minmax(0,1fr)_230px]"
+                          className="group border-border/70 bg-card shadow-soft lift relative flex flex-col overflow-hidden rounded-2xl border"
                         >
-                          <ModelImage src={m.image} alt={`${m.brand} ${m.model}`} />
-                          <div className="min-w-0">
-                            <Small>
-                              {meta?.categories.find((c) => c.id === m.category)?.name} ·{" "}
+                          <Link
+                            href={href}
+                            tabIndex={-1}
+                            aria-hidden
+                            className="bg-muted relative block aspect-[16/10] overflow-hidden"
+                          >
+                            <MachinePhoto
+                              src={m.image}
+                              alt=""
+                              sizes="(min-width: 1280px) 300px, (min-width: 640px) 45vw, 100vw"
+                              className="transition-transform duration-500 group-hover:scale-[1.05]"
+                            />
+                            <span className="absolute right-2 bottom-2 rounded bg-black/55 px-1.5 text-[0.66rem] text-white/85">
+                              Illustrative photo
+                            </span>
+                            {offers.length > 1 && (
+                              <span className="bg-sun text-ink absolute top-3 left-3 rounded-full px-2.5 py-0.5 text-[0.72rem] font-bold">
+                                {offers.length} offers
+                              </span>
+                            )}
+                          </Link>
+                          <div className="flex flex-1 flex-col p-4 sm:p-5">
+                            <span className="text-primary-hover text-[0.74rem] font-semibold tracking-[0.08em] uppercase">
                               {m.subtype}
-                            </Small>
-                            <h3 className="mt-0.5 mb-1">
-                              <Link href={href} className="text-foreground">
+                            </span>
+                            <h3 className="mt-1 mb-1 text-[1.15rem]">
+                              <Link
+                                href={href}
+                                className="text-foreground hover:text-primary-hover no-underline"
+                              >
                                 {m.brand} {m.model}
                               </Link>
                             </h3>
-                            <p className="text-muted-foreground m-0 text-sm">{m.description}</p>
-                            <SpecChips model={m} />
-                            <div className="text-sm">
-                              <b>Jobs:</b> {m.jobs.slice(0, 3).join(" · ")}
-                            </div>
-                          </div>
-                          <div className="flex flex-col justify-between gap-3 md:border-l md:pl-4">
-                            <div>
-                              <Small>
-                                {offers.length} {offers.length === 1 ? "offer" : "offers"} from{" "}
-                                {offers.map((o) => stripDemo(o.partner.name)).join(", ")}
-                              </Small>
-                              <div>
-                                <span className="text-[1.35rem] font-bold">{eur(best.day)}</span>{" "}
-                                <span className="text-muted-foreground text-sm">/day from</span>
+                            <p className="text-muted-foreground m-0 line-clamp-2 text-[0.88rem]">
+                              {m.description}
+                            </p>
+                            <SpecChips model={m} max={3} />
+                            <Small className="mt-auto pt-1">
+                              {offers.map((o) => stripDemo(o.partner.name)).join(" · ")}
+                            </Small>
+                            <div className="border-border/70 mt-3 flex flex-wrap items-end justify-between gap-x-3 gap-y-2 border-t pt-3">
+                              <div className="leading-tight whitespace-nowrap">
+                                <span className="text-muted-foreground text-[0.78rem]">from </span>
+                                <span className="font-heading text-[1.6rem] font-medium">
+                                  {eurWhole(best.day)}
+                                </span>
+                                <span className="text-muted-foreground text-[0.78rem]"> /day</span>
+                                {estimates.length > 0 && (
+                                  <div className="text-[0.8rem]">
+                                    {days} days from{" "}
+                                    <b className="text-primary-hover">
+                                      {eur(Math.min(...estimates))}
+                                    </b>
+                                  </div>
+                                )}
                               </div>
-                              {estimates.length > 0 && (
-                                <div className="text-sm">
-                                  Machine only, {days} days: from{" "}
-                                  <b>{eur(Math.min(...estimates))}</b>
-                                </div>
-                              )}
-                              <div className="text-faint text-sm">Availability to be confirmed</div>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              <Link
-                                href={href}
-                                className={buttonVariants({ variant: "primary", size: "sm" })}
-                              >
-                                See offers
-                              </Link>
-                              {offers.length > 1 && (
+                              <div className="ml-auto flex gap-1.5">
+                                {offers.length > 1 && (
+                                  <Link
+                                    href={`/compare${qs({ model: m.id, ...keep })}`}
+                                    className={buttonVariants({ size: "sm" })}
+                                  >
+                                    Compare
+                                  </Link>
+                                )}
                                 <Link
-                                  href={`/compare${qs({ model: m.id, ...keep })}`}
-                                  className={buttonVariants({ size: "sm" })}
+                                  href={href}
+                                  className={buttonVariants({ variant: "primary", size: "sm" })}
                                 >
-                                  Compare
+                                  See offers
                                 </Link>
-                              )}
+                              </div>
                             </div>
                           </div>
                         </article>
                       )
                     })}
                   </div>
+                  <Small className="text-faint mt-4">
+                    Demo prices excluding VAT. Availability is always confirmed by the rental
+                    company.
+                  </Small>
                 </>
               )
             }}

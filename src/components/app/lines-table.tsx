@@ -54,8 +54,7 @@ export function LinesTable({ lines, totals }: { lines: Line[]; totals?: TotalsLi
       <TableWrap>
         <thead>
           <tr>
-            <th>Type</th>
-            <th>Description</th>
+            <th>Item</th>
             <th className="num">Qty</th>
             <th className="num">Unit price</th>
             <th className="num">Amount</th>
@@ -66,11 +65,11 @@ export function LinesTable({ lines, totals }: { lines: Line[]; totals?: TotalsLi
             const unpriced = l.amount === null || l.amount === undefined
             return (
               <tr key={l.id ?? i} className={cn(unpriced && "to-confirm")}>
-                <td>
-                  <Badge>{LINE_TYPE[l.type]}</Badge>
-                </td>
-                <td>
-                  {l.description}
+                <td className="min-w-[200px]">
+                  <div className="text-faint mb-1 text-[0.7rem] font-semibold tracking-[0.1em] uppercase">
+                    {LINE_TYPE[l.type]}
+                  </div>
+                  <div className="font-medium">{l.description}</div>
                   {l.note && <div className="text-muted-foreground text-[0.85rem]">{l.note}</div>}
                   {l.origin && <div className="text-faint text-[0.85rem]">{l.origin}</div>}
                 </td>

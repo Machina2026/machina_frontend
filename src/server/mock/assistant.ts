@@ -511,12 +511,7 @@ function reasonsFor(m: Model, s: AssistantState, need: Need): string[] {
   const r = [`${need.why}.`]
   for (const key of ["width_mm", "dig_depth_m", "height_m", "load_kg", "power_kva", "capacity_t"]) {
     if (key in m.specs && schema[key]) {
-      r.push(
-        `${schema[key].label}: ${m.specs[key]} ${schema[key].unit} (indicative catalogue figure).`.replace(
-          "  ",
-          " "
-        )
-      )
+      r.push(`${schema[key].label}: ${m.specs[key]} ${schema[key].unit}.`.replace("  ", " "))
     }
   }
   if (s.accessWidthM && s.accessWidthM < 99 && "width_mm" in m.specs) {

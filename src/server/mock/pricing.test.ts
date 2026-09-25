@@ -14,7 +14,10 @@ describe("periodCost", () => {
 
   it("uses a whole week when leftover days cost more than a week", () => {
     // 13 days: 1 week + 6 days would be 480 + 660; two weeks (960) is cheaper.
-    expect(periodCost(rates, 13)).toEqual([960, "1 week + 1 week (for 6 remaining days)"])
+    expect(periodCost(rates, 13)).toEqual([
+      960,
+      "2 weeks (a full week costs less than 6 extra days)",
+    ])
   })
 
   it("offers the monthly rate for shorter periods when it is cheaper", () => {

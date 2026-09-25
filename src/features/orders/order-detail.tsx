@@ -127,6 +127,8 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
               {statusAction}
             </div>
 
+            <AttentionBanner order={o} role={role} />
+
             <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
               <div className="space-y-4">
                 <Card>
@@ -159,7 +161,7 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
                   )}
                 </Card>
 
-                <Card>
+                <Card id="changes" className="scroll-mt-24">
                   <CardHead
                     title="Rental changes"
                     actions={
@@ -312,7 +314,7 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
                   })}
                 </Card>
 
-                <Card>
+                <Card id="charges" className="scroll-mt-24">
                   <CardHead
                     title="Extra charges"
                     actions={
@@ -436,7 +438,7 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
                   ))}
                 </Card>
 
-                <Card>
+                <Card id="documents" className="scroll-mt-24">
                   <CardHead
                     title="Documents"
                     actions={
@@ -575,7 +577,7 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
                   </Small>
                 </Card>
 
-                <Card>
+                <Card id="payment" className="scroll-mt-24">
                   <h3>Payment</h3>
                   <Small className="mb-2">
                     In this MVP the customer pays the rental company directly under the agreed
@@ -712,5 +714,60 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
         )
       }}
     </QueryView>
+  )
+}
+
+/** What this user has to do on the order, each linking to its section. */
+function AttentionBanner({ order: o, role }: { order: OrderView; role: Role }) {
+  const items: { text: string; href: string }[] = []
+  if (role === "client") {
+    for (const ch of o.changes) {
+      if (ch.status === "pending_approval")
+        items.push({
+          text: `Approve or reject ${ch.code} (${CHANGE_KIND[ch.kind].toLowerCase()}, ${eur(ch.line?.amount ?? 0)} + VAT)`,
+          href: "#changes",
+        })
+    }
+    for (const ch of o.charges) {
+      if (ch.status === "pending_review")
+        items.push({ text: `Review charge ${ch.code} (${eur(ch.amount)} + VAT)`, href: "#charges" })
+    }
+    if (o.payment.status === "unpaid" && o.invoices.length)
+      items.push({
+        text: "The invoice is uploaded: declare your payment once made",
+        href: "#payment",
+      })
+  } else {
+    for (const ch of o.changes) {
+      if (ch.status === "requested_by_client")
+        items.push({ text: `Price the customer's request ${ch.code}`, href: "#changes" })
+    }
+    for (const ch of o.charges) {
+      if (ch.status === "disputed")
+        items.push({ text: `${ch.code} was disputed: revise or withdraw it`, href: "#charges" })
+    }
+    if (o.payment.status === "declared")
+      items.push({ text: "The customer declared a payment: confirm receipt", href: "#payment" })
+    if (o.status === "completed" && !o.invoices.length)
+      items.push({ text: "Rental completed: upload the final invoice", href: "#documents" })
+  }
+  if (!items.length) return null
+  return (
+    <div className="from-primary-soft shadow-soft mb-5 rounded-xl border border-[#eccfb3] bg-gradient-to-r to-white p-4">
+      <div className="eyebrow mb-2">Needs your attention</div>
+      <ul className="m-0 list-none space-y-1.5 p-0">
+        {items.map((i) => (
+          <li key={i.text}>
+            <a
+              href={i.href}
+              className="text-foreground hover:text-primary-hover inline-flex items-center gap-2 font-medium no-underline"
+            >
+              <span aria-hidden className="bg-primary size-1.5 rounded-full" />
+              {i.text} →
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
