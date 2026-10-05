@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server"
 
+import { backendUrl, fetchMe } from "@/lib/auth/backend"
 import { ROLE_COOKIE, SESSION_COOKIE } from "@/lib/auth/roles"
+import { bridgeUser } from "@/server/mock/bridge"
 import { getStore } from "@/server/mock/instance"
 import {
   dispatch,
@@ -10,8 +12,13 @@ import {
 } from "@/server/mock/routes"
 import { ApiError } from "@/server/mock/services"
 
-// Mock backend: every /api/* request is dispatched to the in-memory demo API.
-// Replace this file (or point the client at a real API) when the backend exists.
+// Mock backend: /api/* requests are dispatched to the in-memory demo API.
+//
+// With MACHINA_API_URL set, next.config.ts sends the account routes (auth,
+// account, team, admin) to the real API before they reach this file, and the
+// signed-in user here comes from the API's session. Without it, this file
+// serves everything, sign-in included. Remove each mock route once the API
+// implements it.
 
 const MAX_BODY = 25 * 1024 * 1024
 const COOKIE = {
@@ -49,10 +56,17 @@ async function handle(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value ?? null
   const query = Object.fromEntries(request.nextUrl.searchParams)
   const store = getStore()
+  const base = backendUrl()
 
   try {
+    // undefined: let the mock resolve its own session token.
+    const me = base ? await fetchMe(base, request.headers.get("cookie") ?? "") : undefined
     const result = store.transaction(() =>
-      dispatch({ store, token, body, query }, method, request.nextUrl.pathname)
+      dispatch(
+        { store, token, body, query, user: me === undefined ? undefined : bridgeUser(store, me) },
+        method,
+        request.nextUrl.pathname
+      )
     )
     if (isKind<FileResult>(result, "file")) {
       return new Response(new Uint8Array(result.content), {
@@ -81,7 +95,8 @@ async function handle(request: NextRequest) {
         { status: err.status, headers: NO_STORE }
       )
       // An expired or unknown session: drop the cookies so the UI shows the user as signed out.
-      return err.status === 401 && token ? clearSession(res) : res
+      // With the real API, the cookies are its own: leave them alone.
+      return err.status === 401 && token && !base ? clearSession(res) : res
     }
     console.error(err)
     return NextResponse.json({ error: "Internal server error", fields: {} }, { status: 500 })

@@ -1,5 +1,24 @@
 import type { NextConfig } from "next"
 
-const nextConfig: NextConfig = {/* config options here */}
+/** Machina API (machina_backend). Unset: the built-in mock API serves everything. */
+const apiUrl = process.env.MACHINA_API_URL?.replace(/\/+$/, "")
+
+/** Routes the real API implements. The rest stay on the mock (src/app/api/[...path]). */
+const API_ROUTES = ["auth", "account", "team", "admin", "health"]
+
+const nextConfig: NextConfig = {
+  async rewrites() {
+    if (!apiUrl) return []
+    return {
+      // beforeFiles: checked before src/app/api/[...path], which would otherwise answer.
+      beforeFiles: API_ROUTES.map((name) => ({
+        source: `/api/${name}/:path*`,
+        destination: `${apiUrl}/api/${name}/:path*`,
+      })),
+      afterFiles: [],
+      fallback: [],
+    }
+  },
+}
 
 export default nextConfig

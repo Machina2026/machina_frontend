@@ -66,12 +66,20 @@ function route(method: string, pattern: string, role: RouteRole, fn: Handler) {
   ROUTES.push({ method, rx: new RegExp(`^${pattern}$`), role, fn })
 }
 
-export function dispatch(ctx: Omit<Ctx, "user">, method: string, path: string): RouteResult {
+/**
+ * Runs the route for `method path`. The user comes from `ctx.user` when given
+ * (resolved by the real API), otherwise from the mock's own session token.
+ */
+export function dispatch(
+  ctx: Omit<Ctx, "user"> & { user?: User | null },
+  method: string,
+  path: string
+): RouteResult {
   for (const r of ROUTES) {
     if (r.method !== method) continue
     const m = path.match(r.rx)
     if (!m) continue
-    const user = userForToken(ctx.store, ctx.token)
+    const user = ctx.user !== undefined ? ctx.user : userForToken(ctx.store, ctx.token)
     if (r.role && !user) throw new ApiError(401, "Please sign in")
     if (r.role && r.role !== "any" && user!.role !== r.role)
       throw new ApiError(403, "This area is reserved for another role")
@@ -425,6 +433,9 @@ route("POST", "/api/auth/demo-login", null, ({ store, body }) => {
   if (!u || !u.demo) throw new ApiError(404, "Demo account not found")
   return sessionFor(store, u)
 })
+
+// Same list under the path the real API uses, so the web app calls one path.
+route("GET", "/api/auth/demo-accounts", null, (ctx) => dispatch(ctx, "GET", "/api/demo/accounts"))
 
 route("GET", "/api/demo/accounts", null, ({ store }) => {
   const accounts: DemoAccount[] = store

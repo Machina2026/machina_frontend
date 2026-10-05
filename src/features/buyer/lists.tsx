@@ -48,7 +48,7 @@ export function BuyerOverview() {
         <>
           <WelcomeBanner
             name={me?.user.name}
-            org={me?.org.name}
+            org={me?.org?.name}
             subtitle={
               s.actions.length
                 ? `You have ${s.actions.length} thing${s.actions.length === 1 ? "" : "s"} to do. Everything else is on track.`

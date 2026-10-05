@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input"
 import { api, ApiError } from "@/lib/machina/api"
 import { clearDraft } from "@/lib/machina/draft"
 import { metaKey, useMeta, useResetSessionData } from "@/lib/machina/hooks"
-import type { Plan, PublicUser, Settings } from "@/lib/machina/types"
+import type { AuthResponse, Plan, Settings } from "@/lib/machina/types"
 
 import { useAfterSignIn, useDemoAccounts } from "./auth"
 
@@ -30,7 +30,7 @@ export function DemoToolsView() {
 
   const demoLogin = useMutation({
     mutationFn: (userId: string) =>
-      api.post<{ user: PublicUser }>("/api/auth/demo-login", { userId }),
+      api.post<AuthResponse>("/api/auth/demo-login", { userId }),
     onSuccess: (r) => after(r.user),
   })
   const resetData = useMutation({
@@ -73,7 +73,7 @@ export function DemoToolsView() {
                           <b>{a.org}</b>
                           <Small>{a.email}</Small>
                         </td>
-                        <td>{a.role === "client" ? "Customer" : "Partner"}</td>
+                        <td>{a.role === "client" ? "Customer" : a.role === "partner" ? "Partner" : "Admin"}</td>
                         <td className="num">
                           <Button size="sm" onClick={() => demoLogin.mutate(a.id)}>
                             Enter

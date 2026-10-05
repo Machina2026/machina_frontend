@@ -162,7 +162,31 @@ export type User = {
   demo: boolean
 }
 export type PublicUser = Omit<User, "password">
-export type Me = { user: PublicUser; org: { id: string; name: string } }
+/** Roles of signed-in users. Admins (Machina staff) only exist in the real API. */
+export type SessionRole = Role | "admin"
+/** A signed-in user as the API returns it. */
+export type SessionUser = Omit<PublicUser, "role"> & {
+  role: SessionRole
+  companyRole?: "owner" | "member" | null
+}
+/** The signed-in user's company; null for admins. */
+export type Org = { id: string; name: string } & Partial<{
+  type: Role
+  status: "pending" | "approved" | "rejected" | "suspended"
+  vat: string
+  address: string
+  city: string
+  province: string
+  email: string
+  pec: string
+  phone: string
+  sdi: string
+  zones: string[]
+  planId: string | null
+}>
+export type Me = { user: SessionUser; org: Org | null }
+/** Response of sign-in and registration. `pending`: a partner waiting for approval, not signed in. */
+export type AuthResponse = { user: SessionUser; org: Org | null; pending?: boolean }
 
 export type Plan = {
   id: string
@@ -495,7 +519,7 @@ export type EstimateGroup = {
   totals: Totals
 }
 
-export type DemoAccount = PublicUser & { org: string }
+export type DemoAccount = SessionUser & { org: string }
 
 export type ActionItem = { kind: string; text: string; link: string }
 

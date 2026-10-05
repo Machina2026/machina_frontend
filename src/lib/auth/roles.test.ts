@@ -14,6 +14,12 @@ describe("roles", () => {
     expect(canAccessArea("partner", "buyer")).toBe(false)
   })
 
+  it("gives admins no area yet: they land on the home page", () => {
+    expect(homePathForRole("admin")).toBe("/")
+    expect(canAccessArea("admin", "buyer")).toBe(false)
+    expect(canAccessArea("admin", "supplier")).toBe(false)
+  })
+
   it("finds the area from a pathname", () => {
     expect(areaForPath("/buyer/requests/1")).toBe("buyer")
     expect(areaForPath("/supplier")).toBe("supplier")
@@ -23,7 +29,8 @@ describe("roles", () => {
 
   it("only accepts known roles from the cookie", () => {
     expect(isRole("client")).toBe(true)
-    expect(isRole("admin")).toBe(false)
+    expect(isRole("admin")).toBe(true)
+    expect(isRole("superuser")).toBe(false)
     expect(isRole(undefined)).toBe(false)
   })
 })

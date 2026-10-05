@@ -57,7 +57,7 @@ export function SupplierOverview() {
         <>
           <WelcomeBanner
             name={me?.user.name}
-            org={me?.org.name}
+            org={me?.org?.name}
             subtitle={
               s.counts.newRequests
                 ? `${s.counts.newRequests} new request${s.counts.newRequests === 1 ? " is" : "s are"} waiting for your quote.`

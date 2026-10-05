@@ -163,7 +163,7 @@ export function DashShell({ area, children }: { area: Area; children: React.Reac
             aria-hidden
             className="from-primary inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br to-[#f0a052] text-[0.85rem] font-bold text-white"
           >
-            {(me?.org.name ?? "")
+            {(me?.org?.name ?? "")
               .split(/\s+/)
               .slice(0, 2)
               .map((w) => w[0])
@@ -174,7 +174,7 @@ export function DashShell({ area, children }: { area: Area; children: React.Reac
               {area === "buyer" ? "Customer area" : "Rental company"}
             </span>
             <b className="mt-0.5 block truncate text-[0.95rem] leading-snug font-semibold text-white">
-              {me ? stripDemo(me.org.name) : " "}
+              {me?.org ? stripDemo(me.org.name) : " "}
             </b>
           </span>
         </div>

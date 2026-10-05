@@ -62,12 +62,29 @@ src/
   proxy.ts              redirects to /login or the user's own area
 ```
 
+## Machina API (machina_backend)
+
+Accounts are served by the real API in `../machina_backend` (NestJS + PostgreSQL) when `MACHINA_API_URL` is set in `.env.local` (see `.env.example`):
+
+```bash
+# in machina_backend: start the API on http://localhost:4000 (DEMO_LOGIN=true for the demo buttons)
+npm run start:dev
+# here
+echo MACHINA_API_URL=http://localhost:4000 > .env.local
+npm run dev
+```
+
+- `next.config.ts` proxies `/api/auth`, `/api/account`, `/api/team`, `/api/admin` and `/api/health` to the API. The browser only talks to this app, so the API's session cookie stays first-party.
+- Everything else (catalogue, requests, quotes, orders, ...) is still the mock below. It takes the signed-in user from the API (`src/server/mock/bridge.ts`); companies and users registered through the API are added to the mock on first use.
+- Partners who register wait for an admin's approval before they can sign in. Admins (`admin@demo.machina.it`) have no area in the web app yet.
+- Without `MACHINA_API_URL`, the mock serves everything, sign-in included.
+
 ## Mock backend
 
 - Data lives **in server memory**: it survives page reloads but resets when the server restarts (or via `/demo`).
 - Sessions use an httpOnly `machina_session` cookie; `machina_role` lets `proxy.ts` redirect early. The API checks roles and data ownership on every call.
 - The assistant uses the rule-based **demo engine** (English keywords). The original's optional Claude engine isn't ported.
-- To use a real backend later: keep the `/api/*` contract (see `src/lib/machina/types.ts`), delete `src/app/api/[...path]` and `src/server/mock`, and point the client at the new API.
+- As the API gains each module, add its path to `API_ROUTES` in `next.config.ts` and delete the matching mock routes. When nothing is left, delete `src/app/api/[...path]` and `src/server/mock`.
 
 ## Conventions
 

@@ -119,7 +119,7 @@ export function SiteHeader() {
               <span className="hidden max-w-[180px] min-w-0 leading-tight md:block">
                 <b className="block truncate text-[0.82rem] font-semibold">{me.user.name}</b>
                 <span className="text-muted-foreground block truncate text-[0.72rem]">
-                  {stripDemo(me.org.name)}
+                  {me.org ? stripDemo(me.org.name) : "Machina staff"}
                 </span>
               </span>
               <Button

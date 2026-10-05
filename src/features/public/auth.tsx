@@ -18,14 +18,14 @@ import { areaForPath, canAccessArea, homePathForRole, safeNextPath } from "@/lib
 import { api, ApiError } from "@/lib/machina/api"
 import { stripDemo } from "@/lib/machina/format"
 import { useMeta, useResetSessionData } from "@/lib/machina/hooks"
-import type { DemoAccount, PublicUser, Role } from "@/lib/machina/types"
+import type { AuthResponse, DemoAccount, Role, SessionUser } from "@/lib/machina/types"
 import { cn } from "@/lib/utils"
 
 /** After sign-in: go to `next` when this role may open it, otherwise to the role's area. */
 export function useAfterSignIn(next?: string | null) {
   const router = useRouter()
   const reset = useResetSessionData()
-  return async (user: PublicUser, fallback?: string) => {
+  return async (user: SessionUser, fallback?: string) => {
     await reset()
     const safe = safeNextPath(next)
     const area = safe ? areaForPath(safe) : null
@@ -41,7 +41,8 @@ export function useAfterSignIn(next?: string | null) {
 export function useDemoAccounts() {
   return useQuery({
     queryKey: ["demo", "accounts"],
-    queryFn: () => api.get<{ accounts: DemoAccount[]; password: string }>("/api/demo/accounts"),
+    queryFn: () =>
+      api.get<{ accounts: DemoAccount[]; password: string }>("/api/auth/demo-accounts"),
   })
 }
 
@@ -50,12 +51,11 @@ export function LoginView({ next }: { next?: string }) {
   const demo = useDemoAccounts()
   const [form, setForm] = useState({ email: "", password: "" })
   const login = useMutation({
-    mutationFn: () => api.post<{ user: PublicUser }>("/api/auth/login", form),
+    mutationFn: () => api.post<AuthResponse>("/api/auth/login", form),
     onSuccess: (r) => after(r.user),
   })
   const demoLogin = useMutation({
-    mutationFn: (userId: string) =>
-      api.post<{ user: PublicUser }>("/api/auth/demo-login", { userId }),
+    mutationFn: (userId: string) => api.post<AuthResponse>("/api/auth/demo-login", { userId }),
     onSuccess: (r) => after(r.user),
     onError: (err) => toast.error(err.message),
   })
@@ -285,9 +285,31 @@ type RegisterForm = {
   acceptTerms: boolean
 }
 
+/** Shown instead of the form when a partner has registered: they wait for Machina's approval. */
+function RegistrationPending({ company, email }: { company: string; email: string }) {
+  return (
+    <Card className="mx-auto max-w-xl text-center">
+      <span className="bg-primary-soft text-primary mx-auto mb-4 inline-flex size-12 items-center justify-center rounded-full">
+        <CheckIcon aria-hidden className="size-6" />
+      </span>
+      <h1 className="mb-2">Registration received</h1>
+      <p className="text-muted-foreground">
+        Thank you. Machina checks every rental company before it can use the platform. We will
+        review <b className="text-foreground">{stripDemo(company)}</b> and write to{" "}
+        <b className="text-foreground">{email}</b> once it is approved. You can sign in from then
+        on.
+      </p>
+      <Link href="/" className="mt-4 inline-block">
+        Back to the home page
+      </Link>
+    </Card>
+  )
+}
+
 export function RegisterView({ role }: { role: Role }) {
   const meta = useMeta().data
   const after = useAfterSignIn()
+  const [pending, setPending] = useState<{ company: string; email: string } | null>(null)
   const [f, setF] = useState<RegisterForm>({
     companyName: "",
     vat: "",
@@ -304,8 +326,13 @@ export function RegisterView({ role }: { role: Role }) {
     acceptTerms: false,
   })
   const reg = useMutation({
-    mutationFn: () => api.post<{ user: PublicUser }>("/api/auth/register", { ...f, role }),
+    mutationFn: () => api.post<AuthResponse>("/api/auth/register", { ...f, role }),
     onSuccess: (r) => {
+      if (r.pending) {
+        setPending({ company: r.org?.name ?? f.companyName, email: r.user.email })
+        window.scrollTo({ top: 0 })
+        return
+      }
       toast.success("Account created")
       void after(r.user, role === "partner" ? "/supplier/equipment" : "/buyer/company")
     },
@@ -327,6 +354,8 @@ export function RegisterView({ role }: { role: Role }) {
       />
     </Field>
   )
+
+  if (pending) return <RegistrationPending {...pending} />
 
   return (
     <section className="border-border/70 bg-card shadow-lift grid overflow-hidden rounded-3xl border lg:grid-cols-[0.8fr_1.2fr]">

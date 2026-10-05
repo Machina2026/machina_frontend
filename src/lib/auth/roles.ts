@@ -1,4 +1,4 @@
-import type { Role } from "@/lib/machina/types"
+import type { Role, SessionRole } from "@/lib/machina/types"
 
 // Kept free of server-only imports so proxy.ts can use it.
 
@@ -15,16 +15,18 @@ export const SESSION_COOKIE = "machina_session"
 /** Role of the signed-in user; only used by proxy.ts to redirect early. */
 export const ROLE_COOKIE = "machina_role"
 
-export function isRole(value: unknown): value is Role {
-  return value === "client" || value === "partner"
+export function isRole(value: unknown): value is SessionRole {
+  return value === "client" || value === "partner" || value === "admin"
 }
 
-export function areaForRole(role: Role): Area {
-  return AREA_BY_ROLE[role]
+/** The area a role works in. Admins have none in the web app yet. */
+export function areaForRole(role: SessionRole): Area | null {
+  return role === "admin" ? null : AREA_BY_ROLE[role]
 }
 
-export function homePathForRole(role: Role): string {
-  return `/${areaForRole(role)}`
+export function homePathForRole(role: SessionRole): string {
+  const area = areaForRole(role)
+  return area ? `/${area}` : "/"
 }
 
 /** Area a pathname belongs to, or null for public pages. */
@@ -33,7 +35,7 @@ export function areaForPath(pathname: string): Area | null {
   return (AREAS as readonly string[]).includes(first) ? (first as Area) : null
 }
 
-export function canAccessArea(role: Role, area: Area): boolean {
+export function canAccessArea(role: SessionRole, area: Area): boolean {
   return areaForRole(role) === area
 }
 
