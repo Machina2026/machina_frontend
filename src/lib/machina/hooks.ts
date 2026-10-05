@@ -33,7 +33,7 @@ export function useMe() {
   })
 }
 
-/** Refresh everything after a sign-in, sign-out or demo reset. */
+/** Refresh everything after a sign-in or sign-out. */
 export function useResetSessionData() {
   const qc = useQueryClient()
   return () => qc.resetQueries()

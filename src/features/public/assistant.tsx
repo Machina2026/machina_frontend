@@ -209,9 +209,9 @@ function Assistant() {
         machines from the catalogue.
       </PageHead>
       {mode === "demo" ? (
-        <Alert tone="warn" size="sm" className="mb-3.5" title="Demo mode — guided simulation">
-          Replies come from predefined rules, not from an AI model. Suggestions still come from the
-          catalogue.
+        <Alert tone="info" size="sm" className="mb-3.5" title="Guided assistant">
+          Replies follow predefined rules, not an AI model. Suggestions come from the catalogue;
+          prices and availability come from the partners&apos; offers.
         </Alert>
       ) : (
         <Alert tone="info" size="sm" className="mb-3.5" title="AI assistant">
@@ -235,7 +235,7 @@ function Assistant() {
               <b className="block text-[0.95rem]">Machina assistant</b>
               <span className="text-ink-foreground/60 flex items-center gap-1.5 text-[0.78rem]">
                 <span className="size-1.5 rounded-full bg-emerald-400" aria-hidden />
-                {mode === "demo" ? "Guided demo" : "Online"} · suggests catalogue machines only
+                {mode === "demo" ? "Guided" : "Online"} · suggests catalogue machines only
               </span>
             </div>
           </div>

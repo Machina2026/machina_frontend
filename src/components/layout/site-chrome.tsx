@@ -2,28 +2,6 @@ import Link from "next/link"
 
 import { FooterCta } from "./footer-cta"
 
-export function DemoBar() {
-  return (
-    <div className="no-print bg-ink text-ink-foreground/80 flex flex-wrap items-center justify-center gap-3 px-4 py-1.5 text-center text-[0.8rem]">
-      <span>
-        <b className="text-sun font-semibold tracking-[0.12em]">DEMO</b>
-        <span className="text-ink-foreground/30 mx-2">|</span>
-        <span className="hidden sm:inline">
-          Companies, prices and availability are fictitious. Demo sign-in is not real
-          authentication.
-        </span>
-        <span className="sm:hidden">Fictitious data · sign-in is not real</span>
-      </span>
-      <Link
-        href="/demo"
-        className="text-ink-foreground decoration-sun/60 hover:decoration-sun underline"
-      >
-        Demo tools
-      </Link>
-    </div>
-  )
-}
-
 /** The "M" mark from the favicon, as an inline square. */
 export function LogoMark({ className = "size-9" }: { className?: string }) {
   return (
@@ -89,7 +67,6 @@ const FOOTER_LINKS: [string, [string, string][]][] = [
   [
     "Machina",
     [
-      ["/demo", "Demo tools"],
       ["/legal/terms", "Terms"],
       ["/legal/privacy", "Privacy"],
     ],
@@ -137,8 +114,7 @@ export function SiteFooter() {
       </div>
       <div className="relative border-t border-white/10">
         <div className="text-ink-foreground/50 mx-auto max-w-[1240px] px-4 py-5 text-[0.82rem]">
-          © {new Date().getFullYear()} Machina Rent · Demo prototype: no real data, nothing is sent
-          to tax systems.
+          © {new Date().getFullYear()} Machina Rent
         </div>
       </div>
     </footer>

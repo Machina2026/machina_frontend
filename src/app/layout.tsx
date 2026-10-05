@@ -3,7 +3,7 @@ import { GeistMono } from "geist/font/mono"
 import { GeistSans } from "geist/font/sans"
 import type { Metadata } from "next"
 
-import { DemoBar, SiteFooter } from "@/components/layout/site-chrome"
+import { SiteFooter } from "@/components/layout/site-chrome"
 import { SiteHeader } from "@/components/layout/site-header"
 
 import "@fontsource-variable/fraunces/opsz.css"
@@ -15,7 +15,7 @@ import { Providers } from "./providers"
 export const metadata: Metadata = {
   title: { default: "Machina Rent", template: "%s · Machina Rent" },
   description:
-    "Construction equipment rental in Turin and Piedmont: compare offers from several rental companies, send one request, manage quotes and orders. Demo version.",
+    "Construction equipment rental in Turin and Piedmont: compare offers from several rental companies, send one request, manage quotes and orders.",
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -23,7 +23,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col overflow-x-clip">
         <Providers>
-          <DemoBar />
           <SiteHeader />
           <main className="mx-auto w-full max-w-[1240px] flex-1 px-4 pt-8 pb-20">{children}</main>
           <SiteFooter />

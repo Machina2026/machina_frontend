@@ -524,7 +524,7 @@ export function HomeView() {
             })}
           </div>
           <p className="text-faint mt-3 text-[0.82rem]">
-            Demo prices excluding VAT; availability is always confirmed by the rental company.
+            Prices excluding VAT; availability is always confirmed by the rental company.
           </p>
         </section>
       )}

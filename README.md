@@ -13,7 +13,7 @@ npm install
 npm run dev        # http://localhost:3000
 ```
 
-Sign in at `/login` with a demo account (password `demo1234`) or the "Enter" buttons:
+Sign in at `/login` with one of the seeded test accounts (password `demo1234`):
 
 | Role           | Company (fictitious)        | Email                    |
 | -------------- | --------------------------- | ------------------------ |
@@ -23,7 +23,7 @@ Sign in at `/login` with a demo account (password `demo1234`) or the "Enter" but
 | Rental company | Sangone Macchine S.p.A.     | sangone@demo.machina.it  |
 | Rental company | Canavese Rent S.r.l.        | canavese@demo.machina.it |
 
-Tip: use a normal and a private window to see the customer and the rental company side by side. `/demo` restores the demo data.
+Tip: use a normal and a private window to see the customer and the rental company side by side.
 
 ## Scripts
 
@@ -38,7 +38,7 @@ Tip: use a normal and a private window to see the customer and the rental compan
 
 ## What's in it
 
-- **Public:** home, catalogue with filters, model pages, accessories, side-by-side comparison, request draft (several machines, several partners, live estimate), "Describe your job" assistant, sign-in/registration, become a partner, demo tools.
+- **Public:** home, catalogue with filters, model pages, accessories, side-by-side comparison, request draft (several machines, several partners, live estimate), "Describe your job" assistant, sign-in/registration, become a partner.
 - **Customer area (`/buyer`):** overview, requests and quotes (accept/reject/cancel), orders (changes, charges, payment, invoices, draft invoice), changes to approve, documents, company and sites.
 - **Rental company area (`/supplier`):** overview, equipment catalogue and editor (photos, accessories), CSV import, price list, quote editor (price lines, versions, expiry, decline), orders, changes, documents, commissions and plan, profile.
 
@@ -67,7 +67,7 @@ src/
 Accounts are served by the real API in `../machina_backend` (NestJS + PostgreSQL) when `MACHINA_API_URL` is set in `.env.local` (see `.env.example`):
 
 ```bash
-# in machina_backend: start the API on http://localhost:4000 (DEMO_LOGIN=true for the demo buttons)
+# in machina_backend: start the API on http://localhost:4000
 npm run start:dev
 # here
 echo MACHINA_API_URL=http://localhost:4000 > .env.local
@@ -81,7 +81,7 @@ npm run dev
 
 ## Mock backend
 
-- Data lives **in server memory**: it survives page reloads but resets when the server restarts (or via `/demo`).
+- Data lives **in server memory**: it survives page reloads but resets when the server restarts.
 - Sessions use an httpOnly `machina_session` cookie; `machina_role` lets `proxy.ts` redirect early. The API checks roles and data ownership on every call.
 - The assistant uses the rule-based **demo engine** (English keywords). The original's optional Claude engine isn't ported.
 - As the API gains each module, add its path to `API_ROUTES` in `next.config.ts` and delete the matching mock routes. When nothing is left, delete `src/app/api/[...path]` and `src/server/mock`.

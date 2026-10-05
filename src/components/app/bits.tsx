@@ -1,7 +1,6 @@
 import Link from "next/link"
 import * as React from "react"
 
-import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 /** Page title row: title, optional subtitle and actions. */
@@ -105,14 +104,6 @@ export function TableWrap({
     >
       <table className="data-table">{children}</table>
     </div>
-  )
-}
-
-export function DemoBadge() {
-  return (
-    <Badge tone="demo" title="Demo data">
-      DEMO
-    </Badge>
   )
 }
 

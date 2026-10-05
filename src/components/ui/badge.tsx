@@ -14,7 +14,6 @@ const badgeVariants = cva(
         bad: "border-[#f1c7c2] bg-bad-soft text-bad",
         info: "border-[#c9dcec] bg-info-soft text-info",
         accent: "border-[#f5d2b0] bg-primary-soft text-primary-hover",
-        demo: "border-ink bg-ink text-[#ffd2a8]",
       },
     },
     defaultVariants: { tone: "neutral" },

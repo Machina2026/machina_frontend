@@ -531,7 +531,7 @@ export function SupplierCommissions() {
                           if (
                             await confirm({
                               title: "Change plan?",
-                              body: "In the demo the change is immediate and free.",
+                              body: "The new plan applies immediately.",
                               confirmLabel: "Change plan",
                             })
                           ) {

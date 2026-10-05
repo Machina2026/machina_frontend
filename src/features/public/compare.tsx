@@ -390,8 +390,8 @@ function CompareResults({
         </b>{" "}
         ({R[0]?.days ?? ""} calendar days) · Province {body.province} · Quantity {body.qty} ·{" "}
         {body.transport ? "with delivery" : "without delivery"} ·{" "}
-        {body.operator ? "with operator" : "without operator"}. Demo prices excluding VAT;
-        availability to be confirmed.
+        {body.operator ? "with operator" : "without operator"}. Prices excluding VAT; availability
+        to be confirmed.
       </Alert>
       <div className="bg-card hidden overflow-x-auto rounded-lg border md:block">
         <table className="data-table">

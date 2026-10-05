@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 
-import { Crumbs, DemoBadge, KV, MarkList, Small } from "@/components/app/bits"
+import { Crumbs, KV, MarkList, Small } from "@/components/app/bits"
 import { PanelTitle } from "@/components/app/dashboard"
 import { MachinePhoto } from "@/components/app/model-image"
 import { QueryView } from "@/components/app/query-view"
@@ -142,7 +142,6 @@ export function ModelDetailView({ id, query }: { id: string; query: Record<strin
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge tone="accent">{catName}</Badge>
                   <Badge>{m.subtype}</Badge>
-                  {m.demo && <DemoBadge />}
                 </div>
                 <h1 className="mt-3 mb-2 text-[2.3rem] sm:text-[2.8rem]">
                   {m.brand} {m.model}
@@ -256,7 +255,7 @@ export function ModelDetailView({ id, query }: { id: string; query: Record<strin
               )}
             </div>
             <Small className="mb-4">
-              Demo prices excluding VAT. Availability is always to be confirmed by the partner.
+              Prices excluding VAT. Availability is always to be confirmed by the partner.
             </Small>
             <div className="space-y-3.5">
               {offers.map((o, i) => (

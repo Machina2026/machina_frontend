@@ -256,7 +256,7 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
                 <>
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <Small>
-                      <b className="text-foreground">{data.results.length}</b> models · demo prices
+                      <b className="text-foreground">{data.results.length}</b> models · prices
                       excluding VAT
                       {days ? ` · estimates for ${days} calendar days` : ""}
                     </Small>
@@ -371,8 +371,7 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
                     })}
                   </div>
                   <Small className="text-faint mt-4">
-                    Demo prices excluding VAT. Availability is always confirmed by the rental
-                    company.
+                    Prices excluding VAT. Availability is always confirmed by the rental company.
                   </Small>
                 </>
               )

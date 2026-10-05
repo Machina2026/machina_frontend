@@ -434,9 +434,6 @@ route("POST", "/api/auth/demo-login", null, ({ store, body }) => {
   return sessionFor(store, u)
 })
 
-// Same list under the path the real API uses, so the web app calls one path.
-route("GET", "/api/auth/demo-accounts", null, (ctx) => dispatch(ctx, "GET", "/api/demo/accounts"))
-
 route("GET", "/api/demo/accounts", null, ({ store }) => {
   const accounts: DemoAccount[] = store
     .all<User>("users")

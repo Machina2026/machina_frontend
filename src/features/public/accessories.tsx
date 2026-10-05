@@ -29,7 +29,7 @@ export function AccessoriesView() {
   return (
     <>
       <PageHead eyebrow="Attachments" title="Compatible accessories">
-        Accessories are rented together with a compatible machine. Demo prices, excluding VAT.
+        Accessories are rented together with a compatible machine. Prices excluding VAT.
       </PageHead>
       <QueryView query={q}>
         {({ accessories }) => {

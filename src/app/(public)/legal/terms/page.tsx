@@ -10,8 +10,7 @@ export default function TermsPage() {
     <>
       <PageHead title="Terms of service" />
       <Alert tone="warn" title="Not yet written">
-        The terms of service will be drafted by legal counsel before launch. This demo has no
-        binding terms.
+        The terms of service will be drafted by legal counsel before launch.
       </Alert>
     </>
   )

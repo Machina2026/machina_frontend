@@ -1,14 +1,12 @@
 "use client"
 
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 import { ArrowRight, Check as CheckIcon, HardHat, Warehouse } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 
-import { DemoBadge, Small } from "@/components/app/bits"
-import { QueryView } from "@/components/app/query-view"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Check, ChipCheck, Field } from "@/components/ui/field"
@@ -18,7 +16,7 @@ import { areaForPath, canAccessArea, homePathForRole, safeNextPath } from "@/lib
 import { api, ApiError } from "@/lib/machina/api"
 import { stripDemo } from "@/lib/machina/format"
 import { useMeta, useResetSessionData } from "@/lib/machina/hooks"
-import type { AuthResponse, DemoAccount, Role, SessionUser } from "@/lib/machina/types"
+import type { AuthResponse, Role, SessionUser } from "@/lib/machina/types"
 import { cn } from "@/lib/utils"
 
 /** After sign-in: go to `next` when this role may open it, otherwise to the role's area. */
@@ -38,189 +36,87 @@ export function useAfterSignIn(next?: string | null) {
   }
 }
 
-export function useDemoAccounts() {
-  return useQuery({
-    queryKey: ["demo", "accounts"],
-    queryFn: () =>
-      api.get<{ accounts: DemoAccount[]; password: string }>("/api/auth/demo-accounts"),
-  })
-}
-
 export function LoginView({ next }: { next?: string }) {
   const after = useAfterSignIn(next)
-  const demo = useDemoAccounts()
   const [form, setForm] = useState({ email: "", password: "" })
   const login = useMutation({
     mutationFn: () => api.post<AuthResponse>("/api/auth/login", form),
     onSuccess: (r) => after(r.user),
   })
-  const demoLogin = useMutation({
-    mutationFn: (userId: string) => api.post<AuthResponse>("/api/auth/demo-login", { userId }),
-    onSuccess: (r) => after(r.user),
-    onError: (err) => toast.error(err.message),
-  })
 
   return (
-    <>
-      <section className="border-border/70 bg-card shadow-lift mb-6 grid overflow-hidden rounded-3xl border lg:grid-cols-[1fr_1.05fr]">
-        <AuthBrandPanel
-          kicker="One account, every quote"
-          title={
-            <>
-              Welcome back to <span className="text-gradient">Machina Rent</span>
-            </>
-          }
-          points={[
-            "Requests, quotes and orders for all your sites",
-            "Extensions and charges only with your approval",
-            "Draft invoices and documents in one place",
-          ]}
-        />
-        <div className="p-6 sm:p-10 lg:p-12">
-          <div className="eyebrow mb-2.5">Sign in</div>
-          <h1 className="mb-1.5">Good to see you</h1>
-          <p className="text-muted-foreground mb-7">
-            Sign in with your company account, or try a demo account below.
-          </p>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              login.mutate()
-            }}
+    <section className="border-border/70 bg-card shadow-lift grid overflow-hidden rounded-3xl border lg:grid-cols-[1fr_1.05fr]">
+      <AuthBrandPanel
+        kicker="One account, every quote"
+        title={
+          <>
+            Welcome back to <span className="text-gradient">Machina Rent</span>
+          </>
+        }
+        points={[
+          "Requests, quotes and orders for all your sites",
+          "Extensions and charges only with your approval",
+          "Draft invoices and documents in one place",
+        ]}
+      />
+      <div className="p-6 sm:p-10 lg:p-12">
+        <div className="eyebrow mb-2.5">Sign in</div>
+        <h1 className="mb-1.5">Good to see you</h1>
+        <p className="text-muted-foreground mb-7">Sign in with your company account.</p>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            login.mutate()
+          }}
+        >
+          <Field label="Email" htmlFor="l-email">
+            <Input
+              id="l-email"
+              type="email"
+              autoComplete="username"
+              placeholder="name@company.it"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+          </Field>
+          <Field label="Password" htmlFor="l-pass" error={login.error?.message}>
+            <Input
+              id="l-pass"
+              type="password"
+              autoComplete="current-password"
+              aria-invalid={login.isError}
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+            />
+          </Field>
+          <Button type="submit" variant="primary" size="lg" block disabled={login.isPending}>
+            {login.isPending ? "Signing in…" : "Sign in"} <ArrowRight aria-hidden />
+          </Button>
+        </form>
+        <div className="border-border/70 mt-7 grid gap-2 border-t pt-6 text-sm sm:grid-cols-2">
+          <Link
+            href="/register?role=client"
+            className="border-border/80 hover:border-primary/40 hover:bg-primary-soft/40 text-foreground flex items-center gap-2.5 rounded-xl border px-3.5 py-3 no-underline hover:no-underline"
           >
-            <Field label="Email" htmlFor="l-email">
-              <Input
-                id="l-email"
-                type="email"
-                autoComplete="username"
-                placeholder="name@company.it"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
-            </Field>
-            <Field label="Password" htmlFor="l-pass" error={login.error?.message}>
-              <Input
-                id="l-pass"
-                type="password"
-                autoComplete="current-password"
-                aria-invalid={login.isError}
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-              />
-            </Field>
-            <Button type="submit" variant="primary" size="lg" block disabled={login.isPending}>
-              {login.isPending ? "Signing in…" : "Sign in"} <ArrowRight aria-hidden />
-            </Button>
-          </form>
-          <div className="border-border/70 mt-7 grid gap-2 border-t pt-6 text-sm sm:grid-cols-2">
-            <Link
-              href="/register?role=client"
-              className="border-border/80 hover:border-primary/40 hover:bg-primary-soft/40 text-foreground flex items-center gap-2.5 rounded-xl border px-3.5 py-3 no-underline hover:no-underline"
-            >
-              <HardHat aria-hidden className="text-primary size-4" />
-              <span>
-                <b className="block">New customer?</b>
-                <span className="text-muted-foreground">Register your company</span>
-              </span>
-            </Link>
-            <Link
-              href="/register?role=partner"
-              className="border-border/80 hover:border-primary/40 hover:bg-primary-soft/40 text-foreground flex items-center gap-2.5 rounded-xl border px-3.5 py-3 no-underline hover:no-underline"
-            >
-              <Warehouse aria-hidden className="text-primary size-4" />
-              <span>
-                <b className="block">Rental company?</b>
-                <span className="text-muted-foreground">Register as a partner</span>
-              </span>
-            </Link>
-          </div>
+            <HardHat aria-hidden className="text-primary size-4" />
+            <span>
+              <b className="block">New customer?</b>
+              <span className="text-muted-foreground">Register your company</span>
+            </span>
+          </Link>
+          <Link
+            href="/register?role=partner"
+            className="border-border/80 hover:border-primary/40 hover:bg-primary-soft/40 text-foreground flex items-center gap-2.5 rounded-xl border px-3.5 py-3 no-underline hover:no-underline"
+          >
+            <Warehouse aria-hidden className="text-primary size-4" />
+            <span>
+              <b className="block">Rental company?</b>
+              <span className="text-muted-foreground">Register as a partner</span>
+            </span>
+          </Link>
         </div>
-      </section>
-
-      <Card>
-        <div className="mb-1 flex flex-wrap items-center gap-2">
-          <h2 className="m-0">Try it with a demo account</h2>
-          <DemoBadge />
-        </div>
-        <QueryView query={demo} rows={4}>
-          {({ accounts, password }) => (
-            <>
-              <p className="text-muted-foreground text-sm">
-                Demo role picker to try the connected customer and rental company flows.{" "}
-                <b>It is not a real authentication system.</b> Shared password for demo accounts:{" "}
-                <span className="font-mono">{password}</span>
-              </p>
-              <div className="mt-5 grid gap-6 lg:grid-cols-2">
-                {(
-                  [
-                    ["client", "Customers", "Construction companies that rent machines", HardHat],
-                    [
-                      "partner",
-                      "Rental companies",
-                      "Partners that publish machines and send quotes",
-                      Warehouse,
-                    ],
-                  ] as const
-                ).map(([role, title, hint, Icon]) => (
-                  <section key={role}>
-                    <div className="mb-3 flex items-center gap-2.5">
-                      <span className="icon-tile size-9 rounded-lg [&_svg]:size-4">
-                        <Icon aria-hidden />
-                      </span>
-                      <div>
-                        <b className="block leading-tight">{title}</b>
-                        <span className="text-muted-foreground text-[0.82rem]">{hint}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      {accounts
-                        .filter((a) => a.role === role)
-                        .map((a) => (
-                          <button
-                            key={a.id}
-                            type="button"
-                            disabled={demoLogin.isPending}
-                            onClick={() => demoLogin.mutate(a.id)}
-                            className="group border-border/80 hover:border-primary/50 hover:bg-primary-soft/40 flex w-full cursor-pointer items-center gap-3 rounded-xl border bg-white px-3.5 py-3 text-left transition-colors disabled:opacity-60"
-                          >
-                            <span
-                              aria-hidden
-                              className="bg-ink inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-[0.8rem] font-bold text-white"
-                            >
-                              {stripDemo(a.org)
-                                .split(/\s+/)
-                                .slice(0, 2)
-                                .map((w) => w[0])
-                                .join("")}
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <b className="block">{stripDemo(a.org)}</b>
-                              <Small className="truncate">
-                                {a.name} · {a.email}
-                              </Small>
-                            </span>
-                            <span className="text-primary-hover inline-flex items-center gap-1 text-sm font-medium">
-                              Enter
-                              <ArrowRight
-                                aria-hidden
-                                className="size-4 transition-transform group-hover:translate-x-0.5"
-                              />
-                            </span>
-                          </button>
-                        ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
-              <p className="text-muted-foreground mt-5 text-sm">
-                Tip: use a normal and a private window to see the customer and the partner side by
-                side.
-              </p>
-            </>
-          )}
-        </QueryView>
-      </Card>
-    </>
+      </div>
+    </section>
   )
 }
 
