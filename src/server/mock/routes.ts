@@ -3,7 +3,6 @@ import { randomBytes } from "node:crypto"
 import type {
   Accessory,
   Client,
-  DemoAccount,
   FileMeta,
   Model,
   Offer,
@@ -34,7 +33,6 @@ import {
 import { calendarDays, now, validDate } from "./dates"
 import { CATEGORIES, PROVINCES, PROVINCE_IDS, SPEC_FILTERS, SPEC_SCHEMA, VAT_RATE } from "./meta"
 import { itemLines, periodCost, totals } from "./pricing"
-import { DEMO_PASSWORD, seed } from "./seed"
 import * as S from "./services"
 import { ApiError, type Errors } from "./services"
 import type { Store } from "./store"
@@ -428,26 +426,6 @@ route("POST", "/api/auth/login", null, ({ store, body }) => {
   return sessionFor(store, u)
 })
 
-route("POST", "/api/auth/demo-login", null, ({ store, body }) => {
-  const u = store.get<User>("users", str(body.userId))
-  if (!u || !u.demo) throw new ApiError(404, "Demo account not found")
-  return sessionFor(store, u)
-})
-
-route("GET", "/api/demo/accounts", null, ({ store }) => {
-  const accounts: DemoAccount[] = store
-    .all<User>("users")
-    .filter((u) => u.demo)
-    .map((u) => {
-      const org =
-        u.role === "partner"
-          ? store.get<Partner>("partners", u.partnerId ?? "")
-          : store.get<Client>("clients", u.clientId ?? "")
-      return { ...publicUser(u), org: org?.name ?? "?" }
-    })
-  return { accounts, password: DEMO_PASSWORD }
-})
-
 route("POST", "/api/auth/logout", null, ({ store, token }) => {
   deleteSession(store, token)
   return { kind: "logout", body: { ok: true } } satisfies LogoutResult
@@ -523,30 +501,6 @@ route("POST", "/api/auth/register", null, ({ store, body: b }) => {
   }
   store.put("users", u)
   return sessionFor(store, u)
-})
-
-route("POST", "/api/demo/reset", null, ({ store }) => {
-  seed(store)
-  return { kind: "logout", body: { ok: true } } satisfies LogoutResult
-})
-
-route("PUT", "/api/demo/settings", null, ({ store, body }) => {
-  const st = store.get<Settings>("settings", "main")!
-  const errors: Errors = {}
-  ;((body.plans ?? []) as Record<string, unknown>[]).forEach((p, i) => {
-    const plan = st.plans.find((x) => x.id === p.id)
-    if (!plan) return
-    const monthly = S.num(p.monthly, `plans.${i}.monthly`, errors, { minimum: 0 })
-    const rate = S.num(p.commissionRate, `plans.${i}.commissionRate`, errors, { minimum: 0 })
-    if (rate !== null && rate > 0.5) errors[`plans.${i}.commissionRate`] = "Maximum 50%"
-    if (!Object.keys(errors).length && monthly !== null && rate !== null) {
-      plan.monthly = monthly
-      plan.commissionRate = rate
-    }
-  })
-  if (Object.keys(errors).length) throw new ApiError(400, "Invalid values", errors)
-  store.put("settings", st)
-  return st
 })
 
 // ------------------------------------------------------------------- client

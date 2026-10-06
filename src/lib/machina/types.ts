@@ -519,7 +519,6 @@ export type EstimateGroup = {
   totals: Totals
 }
 
-export type DemoAccount = SessionUser & { org: string }
 
 export type ActionItem = { kind: string; text: string; link: string }
 

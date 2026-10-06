@@ -2,7 +2,7 @@
 
 Web app for **Machina Rent**, a B2B marketplace for construction equipment rental in Turin and Piedmont. Customers compare offers from several rental companies, send one request, and manage quotes, orders, extensions, charges and documents. Rental companies manage their catalogue, price quotes and follow orders.
 
-This is an English port of the Italian demo in `E:\work\Archive` (Python backend + vanilla JS). It runs on **mock data**: the demo backend's rules are ported to TypeScript and served by Next.js route handlers, so no separate server is needed.
+Accounts (sign-in, registration, teams, admin) are served by the Machina API in `../machina_backend`. The rest of the marketplace still runs on a built-in mock API (see below) until the API implements it.
 
 ## Getting started
 
@@ -13,17 +13,7 @@ npm install
 npm run dev        # http://localhost:3000
 ```
 
-Sign in at `/login` with one of the seeded test accounts (password `demo1234`):
-
-| Role           | Company (fictitious)        | Email                    |
-| -------------- | --------------------------- | ------------------------ |
-| Customer       | Edilizia Monviso S.r.l.     | client@demo.machina.it   |
-| Customer       | Costruzioni Val Susa S.r.l. | client2@demo.machina.it  |
-| Rental company | Noleggi Dora S.r.l.         | dora@demo.machina.it     |
-| Rental company | Sangone Macchine S.p.A.     | sangone@demo.machina.it  |
-| Rental company | Canavese Rent S.r.l.        | canavese@demo.machina.it |
-
-Tip: use a normal and a private window to see the customer and the rental company side by side.
+To sign in with real accounts, set `MACHINA_API_URL` first: see [Machina API](#machina-api-machina_backend).
 
 ## Scripts
 
@@ -76,14 +66,14 @@ npm run dev
 
 - `next.config.ts` proxies `/api/auth`, `/api/account`, `/api/team`, `/api/admin` and `/api/health` to the API. The browser only talks to this app, so the API's session cookie stays first-party.
 - Everything else (catalogue, requests, quotes, orders, ...) is still the mock below. It takes the signed-in user from the API (`src/server/mock/bridge.ts`); companies and users registered through the API are added to the mock on first use.
-- Partners who register wait for an admin's approval before they can sign in. Admins (`admin@demo.machina.it`) have no area in the web app yet.
+- Partners who register wait for an admin's approval before they can sign in. Admins have no area in the web app yet.
 - Without `MACHINA_API_URL`, the mock serves everything, sign-in included.
 
 ## Mock backend
 
 - Data lives **in server memory**: it survives page reloads but resets when the server restarts.
 - Sessions use an httpOnly `machina_session` cookie; `machina_role` lets `proxy.ts` redirect early. The API checks roles and data ownership on every call.
-- The assistant uses the rule-based **demo engine** (English keywords). The original's optional Claude engine isn't ported.
+- The assistant uses the rule-based engine (English keywords). The original's optional Claude engine isn't ported.
 - As the API gains each module, add its path to `API_ROUTES` in `next.config.ts` and delete the matching mock routes. When nothing is left, delete `src/app/api/[...path]` and `src/server/mock`.
 
 ## Conventions

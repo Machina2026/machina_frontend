@@ -4,7 +4,7 @@ import type { Client, Order, Quote, User } from "@/lib/machina/types"
 
 import { addDays, today } from "./dates"
 import { dispatch, type SessionResult } from "./routes"
-import { seed } from "./seed"
+import { DEMO_PASSWORD, seed } from "./seed"
 import * as S from "./services"
 import { Store } from "./store"
 
@@ -101,8 +101,8 @@ describe("requestOverview", () => {
 
 describe("data separation", () => {
   const call = (userId: string, method: string, path: string) => {
-    const login = { store, token: null, body: { userId }, query: {} }
-    const { token } = dispatch(login, "POST", "/api/auth/demo-login") as SessionResult
+    const body = { email: user(userId).email, password: DEMO_PASSWORD }
+    const { token } = dispatch({ store, token: null, body, query: {} }, "POST", "/api/auth/login") as SessionResult
     return dispatch({ store, token, body: {}, query: {} }, method, path)
   }
 
