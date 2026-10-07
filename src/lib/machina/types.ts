@@ -519,7 +519,6 @@ export type EstimateGroup = {
   totals: Totals
 }
 
-
 export type ActionItem = { kind: string; text: string; link: string }
 
 export type ClientSummary = {
@@ -680,3 +679,95 @@ export type AssistantResult = {
 
 /** Error body returned by the API: a message plus per-field messages. */
 export type ApiErrorBody = { error: string; fields: Record<string, string> }
+
+// ------------------------------------------------------------------- admin (Machina API)
+
+export type CompanyType = Role
+export type CompanyStatus = "pending" | "approved" | "rejected" | "suspended"
+export type UserStatus = "active" | "suspended" | "removed"
+export type CompanyRole = "owner" | "member"
+
+/** A page of a paginated admin list. */
+export type Paged<T> = { items: T[]; total: number; page: number; pageSize: number }
+
+export type AdminStats = {
+  companies: Record<CompanyType, Record<CompanyStatus, number>>
+  users: Record<SessionRole, Record<"active" | "suspended", number>>
+}
+
+export type AdminCompany = {
+  id: string
+  type: CompanyType
+  status: CompanyStatus
+  name: string
+  vat: string
+  address: string
+  city: string
+  province: string
+  email: string
+  pec: string
+  phone: string
+  sdi: string
+  zones: string[]
+  planId: string | null
+  createdAt: string
+  updatedAt: string
+  reviewedAt: string | null
+  rejectionReason: string | null
+}
+export type AdminCompanyListItem = AdminCompany & { memberCount: number }
+
+export type AdminUser = {
+  id: string
+  email: string
+  name: string
+  phone: string
+  role: SessionRole
+  companyId: string | null
+  companyRole: CompanyRole | null
+  status: UserStatus
+  lastLoginAt: string | null
+}
+export type AdminUserListItem = AdminUser & {
+  company: { id: string; name: string } | null
+  createdAt: string
+}
+
+export type AdminCompanyDetail = {
+  company: AdminCompany & { reviewedBy: { id: string; name: string; email: string } | null }
+  members: AdminUser[]
+}
+
+export type AuditEntry = {
+  id: string
+  action: string
+  targetType: "company" | "user" | "invitation"
+  targetId: string
+  /** Company or user name, invitation email; null if the target no longer exists. */
+  targetLabel: string | null
+  data: Record<string, unknown> | null
+  createdAt: string
+  actor: { id: string; name: string; email: string; role: SessionRole } | null
+}
+
+export type Invitation = {
+  id: string
+  email: string
+  role: SessionRole
+  companyId: string | null
+  companyRole: CompanyRole | null
+  invitedById: string
+  expiresAt: string
+  acceptedAt: string | null
+  revokedAt: string | null
+  createdAt: string
+}
+
+/** What an invitation link is for (public). */
+export type InvitationPreview = {
+  email: string
+  role: SessionRole
+  companyRole: CompanyRole | null
+  company: { name: string; type: CompanyType } | null
+  expiresAt: string
+}

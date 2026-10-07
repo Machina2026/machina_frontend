@@ -2,19 +2,23 @@ import { Badge } from "@/components/ui/badge"
 import {
   CHANGE_STATUS,
   CHARGE_STATUS,
+  COMPANY_STATUS,
   ORDER_STATUS,
   PAYMENT_STATUS,
   QUOTE_SENT_FOR_PARTNER,
   QUOTE_STATUS,
   REQUEST_STATUS,
+  USER_STATUS,
 } from "@/lib/machina/labels"
 import type {
   ChangeStatus,
   ChargeStatus,
+  CompanyStatus,
   OrderStatus,
   PaymentStatus,
   QuoteStatus,
   RequestStatus,
+  UserStatus,
 } from "@/lib/machina/types"
 
 type Props =
@@ -24,6 +28,8 @@ type Props =
   | { kind: "change"; status: ChangeStatus }
   | { kind: "charge"; status: ChargeStatus }
   | { kind: "request"; status: RequestStatus }
+  | { kind: "company"; status: CompanyStatus }
+  | { kind: "user"; status: UserStatus }
 
 const TABLES = {
   quote: QUOTE_STATUS,
@@ -32,6 +38,8 @@ const TABLES = {
   change: CHANGE_STATUS,
   charge: CHARGE_STATUS,
   request: REQUEST_STATUS,
+  company: COMPANY_STATUS,
+  user: USER_STATUS,
 }
 
 export function StatusBadge(props: Props) {

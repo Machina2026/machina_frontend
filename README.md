@@ -31,6 +31,7 @@ To sign in with real accounts, set `MACHINA_API_URL` first: see [Machina API](#m
 - **Public:** home, catalogue with filters, model pages, accessories, side-by-side comparison, request draft (several machines, several partners, live estimate), "Describe your job" assistant, sign-in/registration, become a partner.
 - **Customer area (`/buyer`):** overview, requests and quotes (accept/reject/cancel), orders (changes, charges, payment, invoices, draft invoice), changes to approve, documents, company and sites.
 - **Rental company area (`/supplier`):** overview, equipment catalogue and editor (photos, accessories), CSV import, price list, quote editor (price lines, versions, expiry, decline), orders, changes, documents, commissions and plan, profile.
+- **Admin area (`/admin`, Machina API only):** overview, companies (approve, reject, suspend, reactivate), users (suspend, reactivate), admins and their invitations, activity log. Invitation links open `/invite/<token>`.
 
 ## Project structure
 
@@ -38,9 +39,10 @@ To sign in with real accounts, set `MACHINA_API_URL` first: see [Machina API](#m
 src/
   app/
     (public)/           public pages
-    buyer/, supplier/   role areas (layout checks the session)
+    buyer/, supplier/, admin/
+                        role areas (layout checks the session)
     api/[...path]/      mock backend: dispatches every /api/* call
-  features/             screens: public/, buyer/, supplier/, orders/ (shared order page)
+  features/             screens: public/, buyer/, supplier/, admin/, orders/ (shared order page)
   components/
     ui/                 base components (button, badge, modal, field, …)
     app/                domain components (status badges, quote lines, timeline, …)
@@ -66,7 +68,7 @@ npm run dev
 
 - `next.config.ts` proxies `/api/auth`, `/api/account`, `/api/team`, `/api/admin` and `/api/health` to the API. The browser only talks to this app, so the API's session cookie stays first-party.
 - Everything else (catalogue, requests, quotes, orders, ...) is still the mock below. It takes the signed-in user from the API (`src/server/mock/bridge.ts`); companies and users registered through the API are added to the mock on first use.
-- Partners who register wait for an admin's approval before they can sign in. Admins have no area in the web app yet.
+- Partners who register wait for an admin's approval before they can sign in. Admins approve them in `/admin`; create the first admin with `create-admin` (see the API's DEPLOY.md), then invite the others from the Admins page.
 - Without `MACHINA_API_URL`, the mock serves everything, sign-in included.
 
 ## Mock backend

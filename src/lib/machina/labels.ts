@@ -5,6 +5,9 @@ import type {
   ChangeStatus,
   ChargeKind,
   ChargeStatus,
+  CompanyRole,
+  CompanyStatus,
+  CompanyType,
   DocType,
   LineType,
   OperatorMode,
@@ -12,7 +15,9 @@ import type {
   PaymentStatus,
   QuoteStatus,
   RequestStatus,
+  SessionRole,
   TransportMode,
+  UserStatus,
 } from "./types"
 
 // UI labels and badge tones for every status. Add a language by mapping the same keys.
@@ -115,4 +120,51 @@ export const ACTION_KIND: Record<string, string> = {
   request: "Request",
   payment: "Payment",
   tax: "Tax document",
+}
+
+export const COMPANY_STATUS: Record<CompanyStatus, Labeled> = {
+  pending: { label: "Awaiting approval", tone: "warn" },
+  approved: { label: "Approved", tone: "ok" },
+  rejected: { label: "Rejected", tone: "bad" },
+  suspended: { label: "Suspended", tone: "bad" },
+}
+
+export const USER_STATUS: Record<UserStatus, Labeled> = {
+  active: { label: "Active", tone: "ok" },
+  suspended: { label: "Suspended", tone: "bad" },
+  removed: { label: "Removed", tone: "neutral" },
+}
+
+export const COMPANY_TYPE: Record<CompanyType, string> = {
+  client: "Customer",
+  partner: "Rental company",
+}
+
+export const ROLE: Record<SessionRole, string> = {
+  client: "Customer",
+  partner: "Rental company",
+  admin: "Machina admin",
+}
+
+export const COMPANY_ROLE: Record<CompanyRole, string> = {
+  owner: "Owner",
+  member: "Member",
+}
+
+/** Audit log actions, as a phrase that reads before the target ("Approved Noleggi Dora"). */
+export const AUDIT_ACTION: Record<string, string> = {
+  "company.registered": "Registered",
+  "company.approve": "Approved",
+  "company.reject": "Rejected",
+  "company.suspend": "Suspended",
+  "company.reactivate": "Reactivated",
+  "user.suspended": "Suspended user",
+  "user.reactivated": "Reactivated user",
+  "user.removed": "Removed from team",
+  "user.company_role_changed": "Changed team role of",
+  "user.password_changed": "Changed password of",
+  "user.admin_created_cli": "Created admin",
+  "invitation.created": "Invited",
+  "invitation.revoked": "Revoked invitation for",
+  "invitation.accepted": "Accepted invitation for",
 }

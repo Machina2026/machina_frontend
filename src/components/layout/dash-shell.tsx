@@ -8,13 +8,16 @@ import {
   FileText,
   FileUp,
   GitPullRequestArrow,
+  History,
   LayoutGrid,
   type LucideIcon,
   MessageSquareQuote,
   Package,
+  ShieldCheck,
   Tags,
   Truck,
   UserRound,
+  Users,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -23,11 +26,12 @@ import type { Area } from "@/lib/auth/roles"
 import { api } from "@/lib/machina/api"
 import { stripDemo } from "@/lib/machina/format"
 import { useMe } from "@/lib/machina/hooks"
-import type { ClientSummary, PartnerSummary } from "@/lib/machina/types"
+import type { AdminStats, ClientSummary, PartnerSummary } from "@/lib/machina/types"
 import { cn } from "@/lib/utils"
 
 export const buyerSummaryKey = ["buyer", "summary"] as const
 export const supplierSummaryKey = ["supplier", "summary"] as const
+export const adminStatsKey = ["admin", "stats"] as const
 
 export function useBuyerSummary() {
   return useQuery({
@@ -39,6 +43,13 @@ export function useSupplierSummary() {
   return useQuery({
     queryKey: supplierSummaryKey,
     queryFn: () => api.get<PartnerSummary>("/api/partner/summary"),
+  })
+}
+
+export function useAdminStats() {
+  return useQuery({
+    queryKey: adminStatsKey,
+    queryFn: () => api.get<AdminStats>("/api/admin/stats"),
   })
 }
 
@@ -88,6 +99,22 @@ function useSupplierMenu(): MenuItem[] {
     { href: "/supplier/documents", label: "Documents and draft invoices", icon: FileUp },
     { href: "/supplier/commissions", label: "Commissions and plan", icon: BadgePercent },
     { href: "/supplier/profile", label: "Company profile", icon: UserRound },
+  ]
+}
+
+function useAdminMenu(): MenuItem[] {
+  const c = useAdminStats().data?.companies
+  return [
+    { href: "/admin", label: "Overview", icon: LayoutGrid },
+    {
+      href: "/admin/companies",
+      label: "Companies",
+      icon: Building2,
+      count: c ? c.partner.pending + c.client.pending : undefined,
+    },
+    { href: "/admin/users", label: "Users", icon: Users },
+    { href: "/admin/team", label: "Admins", icon: ShieldCheck },
+    { href: "/admin/audit", label: "Activity log", icon: History },
   ]
 }
 
@@ -147,6 +174,15 @@ function BuyerNav() {
 function SupplierNav() {
   return <Menu items={useSupplierMenu()} area="supplier" />
 }
+function AdminNav() {
+  return <Menu items={useAdminMenu()} area="admin" />
+}
+
+const AREA_LABEL: Record<Area, string> = {
+  buyer: "Customer area",
+  supplier: "Rental company",
+  admin: "Machina admin",
+}
 
 /** Dashboard layout: side menu with pending counts, then the page. */
 export function DashShell({ area, children }: { area: Area; children: React.ReactNode }) {
@@ -163,7 +199,7 @@ export function DashShell({ area, children }: { area: Area; children: React.Reac
             aria-hidden
             className="from-primary inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br to-[#f0a052] text-[0.85rem] font-bold text-white"
           >
-            {(me?.org?.name ?? "")
+            {(me?.org?.name ?? me?.user.name ?? "")
               .split(/\s+/)
               .slice(0, 2)
               .map((w) => w[0])
@@ -171,14 +207,16 @@ export function DashShell({ area, children }: { area: Area; children: React.Reac
           </span>
           <span className="min-w-0">
             <span className="text-sun block text-[0.64rem] font-semibold tracking-[0.16em] uppercase">
-              {area === "buyer" ? "Customer area" : "Rental company"}
+              {AREA_LABEL[area]}
             </span>
             <b className="mt-0.5 block truncate text-[0.95rem] leading-snug font-semibold text-white">
-              {me?.org ? stripDemo(me.org.name) : " "}
+              {me?.org ? stripDemo(me.org.name) : (me?.user.name ?? " ")}
             </b>
           </span>
         </div>
-        <div className="relative">{area === "buyer" ? <BuyerNav /> : <SupplierNav />}</div>
+        <div className="relative">
+          {area === "buyer" ? <BuyerNav /> : area === "supplier" ? <SupplierNav /> : <AdminNav />}
+        </div>
       </aside>
       <section className="min-w-0">{children}</section>
     </div>

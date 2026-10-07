@@ -14,15 +14,18 @@ describe("roles", () => {
     expect(canAccessArea("partner", "buyer")).toBe(false)
   })
 
-  it("gives admins no area yet: they land on the home page", () => {
-    expect(homePathForRole("admin")).toBe("/")
+  it("keeps admins in their own area", () => {
+    expect(homePathForRole("admin")).toBe("/admin")
+    expect(canAccessArea("admin", "admin")).toBe(true)
     expect(canAccessArea("admin", "buyer")).toBe(false)
-    expect(canAccessArea("admin", "supplier")).toBe(false)
+    expect(canAccessArea("client", "admin")).toBe(false)
+    expect(canAccessArea("partner", "admin")).toBe(false)
   })
 
   it("finds the area from a pathname", () => {
     expect(areaForPath("/buyer/requests/1")).toBe("buyer")
     expect(areaForPath("/supplier")).toBe("supplier")
+    expect(areaForPath("/admin/companies")).toBe("admin")
     expect(areaForPath("/buyers")).toBeNull()
     expect(areaForPath("/")).toBeNull()
   })

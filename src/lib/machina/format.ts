@@ -32,6 +32,17 @@ export function date(iso: string | null | undefined) {
 export const dateTime = (iso: string | null | undefined) =>
   iso ? `${date(iso)} ${iso.slice(11, 16)}` : "—"
 
+const localFmt = new Intl.DateTimeFormat("en-GB", { dateStyle: "short", timeStyle: "short" })
+const localDateFmt = new Intl.DateTimeFormat("en-GB", { dateStyle: "short" })
+
+/** The day of a UTC timestamp from the Machina API, in the viewer's time zone. */
+export const localDate = (iso: string | null | undefined) =>
+  iso ? localDateFmt.format(new Date(iso)) : "—"
+
+/** A UTC timestamp from the Machina API ("2026-10-07T05:06:00.000Z") in the viewer's time zone. */
+export const localDateTime = (iso: string | null | undefined) =>
+  iso ? localFmt.format(new Date(iso)).replace(",", "") : "—"
+
 const pad = (n: number) => String(n).padStart(2, "0")
 const localIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 

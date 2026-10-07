@@ -1,13 +1,14 @@
-import type { Role, SessionRole } from "@/lib/machina/types"
+import type { SessionRole } from "@/lib/machina/types"
 
 // Kept free of server-only imports so proxy.ts can use it.
 
-export const AREAS = ["buyer", "supplier"] as const
+export const AREAS = ["buyer", "supplier", "admin"] as const
 export type Area = (typeof AREAS)[number]
 
-const AREA_BY_ROLE: Record<Role, Area> = {
+const AREA_BY_ROLE: Record<SessionRole, Area> = {
   client: "buyer",
   partner: "supplier",
+  admin: "admin",
 }
 
 /** httpOnly session token issued by the API. */
@@ -19,14 +20,13 @@ export function isRole(value: unknown): value is SessionRole {
   return value === "client" || value === "partner" || value === "admin"
 }
 
-/** The area a role works in. Admins have none in the web app yet. */
-export function areaForRole(role: SessionRole): Area | null {
-  return role === "admin" ? null : AREA_BY_ROLE[role]
+/** The area a role works in. */
+export function areaForRole(role: SessionRole): Area {
+  return AREA_BY_ROLE[role]
 }
 
 export function homePathForRole(role: SessionRole): string {
-  const area = areaForRole(role)
-  return area ? `/${area}` : "/"
+  return `/${areaForRole(role)}`
 }
 
 /** Area a pathname belongs to, or null for public pages. */
