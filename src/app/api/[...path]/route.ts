@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import { backendUrl, fetchMe } from "@/lib/auth/backend"
 import { ROLE_COOKIE, SESSION_COOKIE } from "@/lib/auth/roles"
 import { bridgeUser } from "@/server/mock/bridge"
+import { syncCatalog } from "@/server/mock/catalog-sync"
 import { getStore } from "@/server/mock/instance"
 import {
   dispatch,
@@ -14,11 +15,11 @@ import { ApiError } from "@/server/mock/services"
 
 // Mock backend: /api/* requests are dispatched to the in-memory demo API.
 //
-// With MACHINA_API_URL set, next.config.ts sends the account routes (auth,
-// account, team, admin) to the real API before they reach this file, and the
-// signed-in user here comes from the API's session. Without it, this file
-// serves everything, sign-in included. Remove each mock route once the API
-// implements it.
+// With MACHINA_API_URL set, next.config.ts sends the routes the real API
+// implements (accounts, the catalogue, partners' machines) to it before they
+// reach this file. The signed-in user here then comes from the API's session,
+// and the catalogue the mock prices from is copied from the API
+// (catalog-sync.ts). Without it, this file serves everything, sign-in included.
 
 const MAX_BODY = 25 * 1024 * 1024
 const COOKIE = {
@@ -59,8 +60,19 @@ async function handle(request: NextRequest) {
   const base = backendUrl()
 
   try {
+    if (base && request.nextUrl.pathname.startsWith("/api/partner/import/")) {
+      // The import would write into the mock's copy of the catalogue, which the
+      // API's catalogue overwrites on the next request.
+      return NextResponse.json(
+        { error: "CSV import is not available yet. Add machines one at a time.", fields: {} },
+        { status: 501, headers: NO_STORE }
+      )
+    }
     // undefined: let the mock resolve its own session token.
-    const me = base ? await fetchMe(base, request.headers.get("cookie") ?? "") : undefined
+    const [me] = await Promise.all([
+      base ? fetchMe(base, request.headers.get("cookie") ?? "") : undefined,
+      base ? syncCatalog(store, base) : undefined,
+    ])
     const result = store.transaction(() =>
       dispatch(
         { store, token, body, query, user: me === undefined ? undefined : bridgeUser(store, me) },

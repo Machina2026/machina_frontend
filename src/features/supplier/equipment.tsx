@@ -21,7 +21,7 @@ import { Check, ChipCheck, Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { api, ApiError, downloadText, fileUrl, readUpload } from "@/lib/machina/api"
+import { api, ApiError, downloadText, photoUrl, readUpload } from "@/lib/machina/api"
 import { eur } from "@/lib/machina/format"
 import { useMeta } from "@/lib/machina/hooks"
 import { OPERATOR_MODE, TRANSPORT_MODE } from "@/lib/machina/labels"
@@ -752,7 +752,7 @@ function EditorForm({
                 <div key={p.id} className="relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={fileUrl(p.id)}
+                    src={photoUrl(p.id)}
                     alt=""
                     className="h-24 w-32 rounded border object-cover"
                   />

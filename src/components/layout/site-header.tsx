@@ -11,16 +11,48 @@ import { api } from "@/lib/machina/api"
 import { useDraft } from "@/lib/machina/draft"
 import { stripDemo } from "@/lib/machina/format"
 import { useMe, useResetSessionData } from "@/lib/machina/hooks"
+import type { SessionRole } from "@/lib/machina/types"
 import { cn } from "@/lib/utils"
 
 import { Logo } from "./site-chrome"
 
-const NAV: [string, string][] = [
+const PUBLIC_NAV: [string, string][] = [
   ["/catalog", "Catalogue"],
   ["/assistant", "Describe your job"],
   ["/accessories", "Accessories"],
   ["/become-a-partner", "Become a partner"],
 ]
+
+// Partners and admins see their working sections instead of the buyer-facing links.
+const NAV_BY_ROLE: Partial<Record<SessionRole, [string, string][]>> = {
+  partner: [
+    ["/supplier", "Dashboard"],
+    ["/supplier/equipment", "Equipment"],
+    ["/supplier/quotes", "Requests and quotes"],
+    ["/supplier/orders", "Orders"],
+    ["/catalog", "Marketplace"],
+  ],
+  admin: [
+    ["/admin", "Dashboard"],
+    ["/admin/companies", "Companies"],
+    ["/admin/users", "Users"],
+    ["/admin/audit", "Activity log"],
+    ["/catalog", "Catalogue"],
+  ],
+}
+
+const ROLE_BADGE: Partial<Record<SessionRole, string>> = {
+  partner: "Partner",
+  admin: "Admin",
+}
+
+/** The most specific nav entry matching the pathname, so /supplier/orders doesn't also light up "Dashboard". */
+function activeHref(nav: [string, string][], pathname: string) {
+  return nav
+    .map(([href]) => href)
+    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+    .sort((a, b) => b.length - a.length)[0]
+}
 
 function initials(name: string) {
   return name
@@ -39,7 +71,12 @@ export function SiteHeader() {
   const draft = useDraft()
   const resetData = useResetSessionData()
   const role = me?.user.role
-  const areaHref = role ? homePathForRole(role) : null
+  const roleNav = role ? NAV_BY_ROLE[role] : undefined
+  const nav = roleNav ?? PUBLIC_NAV
+  const current = activeHref(nav, pathname)
+  // Role navs already start with "Dashboard".
+  const areaHref = role && !roleNav ? homePathForRole(role) : null
+  const badge = role ? ROLE_BADGE[role] : undefined
 
   async function signOut() {
     await api.post("/api/auth/logout").catch(() => undefined)
@@ -51,7 +88,14 @@ export function SiteHeader() {
   return (
     <header className="no-print border-border/70 sticky top-0 z-30 border-b bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70">
       <div className="mx-auto flex h-[72px] max-w-[1240px] items-center gap-3 px-4 sm:gap-6">
-        <Logo />
+        <div className="flex shrink-0 items-center gap-2.5">
+          <Logo />
+          {badge && (
+            <span className="bg-ink text-sun rounded-full px-2.5 py-1 text-[0.66rem] font-bold tracking-[0.14em] uppercase">
+              {badge}
+            </span>
+          )}
+        </div>
         <nav
           aria-label="Main"
           className={cn(
@@ -59,8 +103,8 @@ export function SiteHeader() {
             open ? "flex" : "max-lg:hidden lg:flex"
           )}
         >
-          {NAV.map(([href, label]) => {
-            const active = pathname === href || pathname.startsWith(`${href}/`)
+          {nav.map(([href, label]) => {
+            const active = href === current
             return (
               <Link
                 key={href}
@@ -93,7 +137,7 @@ export function SiteHeader() {
           )}
         </nav>
         <div className="ml-auto flex shrink-0 items-center gap-2">
-          {role !== "partner" && (
+          {(!role || role === "client") && (
             <Link
               href="/request"
               className={buttonVariants({ size: "sm", className: "relative rounded-full" })}

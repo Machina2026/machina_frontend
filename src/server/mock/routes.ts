@@ -403,6 +403,12 @@ route("POST", "/api/assistant", null, ({ store, body }) => {
   return runAssistant(store, msg.slice(0, 2000), (body.state ?? null) as never)
 })
 
+route("GET", "/api/photos/([\\w-]+)", null, ({ store }, id) => {
+  const f = store.getFile(id)
+  if (!f || f.meta.kind !== "photo") throw new ApiError(404, "Photo not found")
+  return { kind: "file", meta: f.meta, content: f.content } satisfies FileResult
+})
+
 route("GET", "/api/files/([\\w-]+)", null, ({ store, token }, id) => {
   const f = store.getFile(id)
   if (!f) throw new ApiError(404, "File not found")

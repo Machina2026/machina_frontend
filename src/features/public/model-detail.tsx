@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Check } from "@/components/ui/field"
-import { api, fileUrl, qs } from "@/lib/machina/api"
+import { api, photoUrl, qs } from "@/lib/machina/api"
 import { eur, eurWhole, num, stripDemo } from "@/lib/machina/format"
 import { useMeta } from "@/lib/machina/hooks"
 import { OPERATOR_MODE, TRANSPORT_MODE } from "@/lib/machina/labels"
@@ -321,7 +321,7 @@ export function ModelDetailView({ id, query }: { id: string; query: Record<strin
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           key={f}
-                          src={fileUrl(f)}
+                          src={photoUrl(f)}
                           alt="Partner's photo"
                           className="h-24 rounded border object-cover"
                         />

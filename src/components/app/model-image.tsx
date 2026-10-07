@@ -1,6 +1,6 @@
 import Image from "next/image"
 
-import { fileUrl } from "@/lib/machina/api"
+import { photoUrl } from "@/lib/machina/api"
 import { num } from "@/lib/machina/format"
 import type { PublicModel } from "@/lib/machina/types"
 import { cn } from "@/lib/utils"
@@ -129,7 +129,7 @@ export function PhotoOrImage({
   if (photos?.length)
     return (
       <ModelImage
-        src={fileUrl(photos[0])}
+        src={photoUrl(photos[0])}
         alt="Machine photo"
         note="Partner's photo"
         className={className}

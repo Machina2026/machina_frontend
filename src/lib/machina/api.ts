@@ -51,6 +51,9 @@ export function qs(params: Record<string, string | number | boolean | null | und
 
 export const fileUrl = (id: string) => `/api/files/${id}`
 
+/** A partner's machine photo (public). */
+export const photoUrl = (id: string) => `/api/photos/${id}`
+
 export type Upload = { name: string; mime: string; data: string }
 
 /** Read a file as a base64 upload (max 5 MB, like the API). */
