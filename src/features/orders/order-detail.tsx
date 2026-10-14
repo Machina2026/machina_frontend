@@ -753,14 +753,14 @@ function AttentionBanner({ order: o, role }: { order: OrderView; role: Role }) {
   }
   if (!items.length) return null
   return (
-    <div className="from-primary-soft shadow-soft mb-5 rounded-xl border border-[#eccfb3] bg-gradient-to-r to-white p-4">
+    <div className="bg-primary-soft mb-5 rounded-xl border border-[#f6e2a4] p-4">
       <div className="eyebrow mb-2">Needs your attention</div>
       <ul className="m-0 list-none space-y-1.5 p-0">
         {items.map((i) => (
           <li key={i.text}>
             <a
               href={i.href}
-              className="text-foreground hover:text-primary-hover inline-flex items-center gap-2 font-medium no-underline"
+              className="text-foreground hover:text-brand inline-flex items-center gap-2 font-medium no-underline"
             >
               <span aria-hidden className="bg-primary size-1.5 rounded-full" />
               {i.text} →

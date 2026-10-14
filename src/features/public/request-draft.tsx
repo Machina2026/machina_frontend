@@ -521,7 +521,7 @@ function EstimateSummary({ groups }: { groups: EstimateGroup[] }) {
 function StepTitle({ n, title, hint }: { n: number; title: string; hint: string }) {
   return (
     <div className="mb-4 flex items-start gap-3">
-      <span className="bg-primary font-heading mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[0.95rem] font-semibold text-white">
+      <span className="bg-primary text-ink mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[0.95rem] font-bold">
         {n}
       </span>
       <div>

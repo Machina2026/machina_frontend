@@ -6,8 +6,6 @@ import type { Metadata } from "next"
 import { SiteFooter } from "@/components/layout/site-chrome"
 import { SiteHeader } from "@/components/layout/site-header"
 
-import "@fontsource-variable/fraunces/opsz.css"
-
 import "./globals.css"
 
 import { Providers } from "./providers"
@@ -24,7 +22,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col overflow-x-clip">
         <Providers>
           <SiteHeader />
-          <main className="mx-auto w-full max-w-[1240px] flex-1 px-4 pt-8 pb-20">{children}</main>
+          <main className="flex flex-1 flex-col">{children}</main>
           <SiteFooter />
         </Providers>
       </body>

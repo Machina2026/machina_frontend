@@ -17,7 +17,7 @@ export default function Error({
   }, [error])
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-1 items-center py-8">
+    <div className="mx-auto flex w-full max-w-xl flex-1 items-center px-4 py-16">
       <div className="w-full">
         <ErrorState onRetry={retry} />
       </div>

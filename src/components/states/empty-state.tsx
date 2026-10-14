@@ -23,7 +23,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "border-border-strong/60 bg-card/70 relative flex flex-col items-center gap-3 overflow-hidden rounded-3xl border border-dashed bg-[radial-gradient(60%_80%_at_50%_0%,#fbeee2,transparent_70%)] px-6 py-14 text-center",
+        "border-border-strong/60 bg-card/70 relative flex flex-col items-center gap-3 overflow-hidden rounded-2xl border border-dashed bg-[radial-gradient(60%_80%_at_50%_0%,#fbeee2,transparent_70%)] px-6 py-14 text-center",
         className
       )}
     >
@@ -38,7 +38,7 @@ export function EmptyState({
         )
       )}
       <div className="grid gap-1">
-        <p className="font-heading m-0 text-[1.45rem] font-medium">{title}</p>
+        <p className="m-0 text-[1.45rem] font-bold">{title}</p>
         {description && (
           <p className="text-muted-foreground m-0 max-w-md text-[0.95rem]">{description}</p>
         )}

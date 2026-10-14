@@ -68,10 +68,7 @@ export function SupplierOverview() {
                 <Link href="/supplier/quotes" className={buttonVariants({ variant: "primary" })}>
                   Review requests
                 </Link>
-                <Link
-                  href="/supplier/equipment/new"
-                  className={buttonVariants({ variant: "glass" })}
-                >
+                <Link href="/supplier/equipment/new" className={buttonVariants()}>
                   Add a machine
                 </Link>
               </>

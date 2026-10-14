@@ -26,9 +26,7 @@ export function Modal({ open, onOpenChange, title, description, wide, children }
             wide ? "max-w-2xl" : "max-w-lg"
           )}
         >
-          <Dialog.Title className="font-heading mb-1 text-[1.35rem] font-semibold">
-            {title}
-          </Dialog.Title>
+          <Dialog.Title className="mb-1 text-[1.35rem] font-semibold">{title}</Dialog.Title>
           {description && (
             <Dialog.Description className="text-muted-foreground mb-3 text-sm">
               {description}

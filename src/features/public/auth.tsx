@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 
+import { MachinePhoto } from "@/components/app/model-image"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Check, ChipCheck, Field } from "@/components/ui/field"
@@ -45,12 +46,12 @@ export function LoginView({ next }: { next?: string }) {
   })
 
   return (
-    <section className="border-border/70 bg-card shadow-lift grid overflow-hidden rounded-3xl border lg:grid-cols-[1fr_1.05fr]">
+    <section className="border-border bg-card shadow-lift grid overflow-hidden rounded-2xl border lg:grid-cols-[1fr_1.05fr]">
       <AuthBrandPanel
         kicker="One account, every quote"
         title={
           <>
-            Welcome back to <span className="text-gradient">Machina Rent</span>
+            Welcome back to <span className="text-primary">Machina Rent</span>
           </>
         }
         points={[
@@ -93,12 +94,12 @@ export function LoginView({ next }: { next?: string }) {
             {login.isPending ? "Signing in…" : "Sign in"} <ArrowRight aria-hidden />
           </Button>
         </form>
-        <div className="border-border/70 mt-7 grid gap-2 border-t pt-6 text-sm sm:grid-cols-2">
+        <div className="border-border mt-7 grid gap-2 border-t pt-6 text-sm sm:grid-cols-2">
           <Link
             href="/register?role=client"
             className="border-border/80 hover:border-primary/40 hover:bg-primary-soft/40 text-foreground flex items-center gap-2.5 rounded-xl border px-3.5 py-3 no-underline hover:no-underline"
           >
-            <HardHat aria-hidden className="text-primary size-4" />
+            <HardHat aria-hidden className="text-brand size-4" />
             <span>
               <b className="block">New customer?</b>
               <span className="text-muted-foreground">Register your company</span>
@@ -108,7 +109,7 @@ export function LoginView({ next }: { next?: string }) {
             href="/register?role=partner"
             className="border-border/80 hover:border-primary/40 hover:bg-primary-soft/40 text-foreground flex items-center gap-2.5 rounded-xl border px-3.5 py-3 no-underline hover:no-underline"
           >
-            <Warehouse aria-hidden className="text-primary size-4" />
+            <Warehouse aria-hidden className="text-brand size-4" />
             <span>
               <b className="block">Rental company?</b>
               <span className="text-muted-foreground">Register as a partner</span>
@@ -131,29 +132,21 @@ export function AuthBrandPanel({
   points: string[]
 }) {
   return (
-    <div className="bg-ink text-ink-foreground relative flex min-h-[360px] flex-col overflow-hidden p-8 sm:p-10">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/img/yard.svg"
-        alt=""
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[62%] w-full object-cover object-bottom opacity-80"
-      />
+    <div className="bg-ink relative flex min-h-[360px] flex-col overflow-hidden p-8 text-white sm:p-10">
+      <MachinePhoto src="/img/telehandler.png" alt="" sizes="(min-width: 1024px) 600px, 100vw" />
       <div
         aria-hidden
-        className="from-ink via-ink/90 pointer-events-none absolute inset-0 bg-gradient-to-b to-transparent"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/90 via-black/70 to-black/30"
       />
       <div className="relative">
-        <span className="text-sun inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-[0.68rem] font-semibold tracking-[0.16em] uppercase">
-          <span className="bg-sun size-1.5 rounded-full" aria-hidden />
-          {kicker}
-        </span>
-        <p className="font-heading mt-5 mb-5 text-[2rem] leading-tight font-medium text-white">
+        <p className="text-primary m-0 text-[0.95rem] font-semibold">{kicker}</p>
+        <p className="mt-3 mb-5 text-[2rem] leading-tight font-bold tracking-[-0.03em] text-white">
           {title}
         </p>
         <ul className="m-0 grid list-none gap-2.5 p-0">
           {points.map((t) => (
-            <li key={t} className="text-ink-foreground/85 flex items-center gap-2.5 text-[0.95rem]">
-              <span className="bg-sun/15 text-sun inline-flex size-6 shrink-0 items-center justify-center rounded-full">
+            <li key={t} className="flex items-center gap-2.5 text-[0.95rem] text-white/90">
+              <span className="bg-primary text-ink inline-flex size-6 shrink-0 items-center justify-center rounded-full">
                 <CheckIcon aria-hidden className="size-3.5" />
               </span>
               {t}
@@ -185,7 +178,7 @@ type RegisterForm = {
 function RegistrationPending({ company, email }: { company: string; email: string }) {
   return (
     <Card className="mx-auto max-w-xl text-center">
-      <span className="bg-primary-soft text-primary mx-auto mb-4 inline-flex size-12 items-center justify-center rounded-full">
+      <span className="bg-primary-soft text-brand mx-auto mb-4 inline-flex size-12 items-center justify-center rounded-full">
         <CheckIcon aria-hidden className="size-6" />
       </span>
       <h1 className="mb-2">Registration received</h1>
@@ -254,17 +247,17 @@ export function RegisterView({ role }: { role: Role }) {
   if (pending) return <RegistrationPending {...pending} />
 
   return (
-    <section className="border-border/70 bg-card shadow-lift grid overflow-hidden rounded-3xl border lg:grid-cols-[0.8fr_1.2fr]">
+    <section className="border-border bg-card shadow-lift grid overflow-hidden rounded-2xl border lg:grid-cols-[0.8fr_1.2fr]">
       <AuthBrandPanel
         kicker={role === "partner" ? "For rental companies" : "For construction companies"}
         title={
           role === "partner" ? (
             <>
-              Publish your fleet, <span className="text-gradient">receive ready requests</span>
+              Publish your fleet, <span className="text-primary">receive ready requests</span>
             </>
           ) : (
             <>
-              One account for <span className="text-gradient">every site</span>
+              One account for <span className="text-primary">every site</span>
             </>
           )
         }

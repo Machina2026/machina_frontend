@@ -3,6 +3,7 @@
 import { ArrowRight, FileText, Inbox, Truck } from "lucide-react"
 import Link from "next/link"
 
+import { MachinePhoto } from "@/components/app/model-image"
 import { Alert } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
@@ -40,20 +41,13 @@ export function PartnerInfoView() {
   const settings = useMeta().data?.settings
   return (
     <>
-      <section className="bg-ink text-ink-foreground shadow-lift relative mb-12 grid overflow-hidden rounded-3xl lg:grid-cols-[1.1fr_1fr]">
-        <div className="bg-blueprint relative p-8 sm:p-12">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_80%_at_0%_0%,rgb(236_116_48/0.3),transparent_70%)]"
-          />
-          <span className="text-sun relative inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-[0.68rem] font-semibold tracking-[0.16em] uppercase">
-            <span className="bg-sun size-1.5 rounded-full" aria-hidden />
-            For rental companies
-          </span>
-          <h1 className="relative mt-4 text-[2.4rem] leading-[1.08] text-white sm:text-[3rem]">
-            Become a Machina Rent <span className="text-gradient">partner</span>
+      <section className="bg-ink relative mb-12 grid overflow-hidden rounded-2xl text-white lg:grid-cols-[1.1fr_1fr]">
+        <div className="relative p-8 sm:p-12">
+          <p className="text-primary mb-0 text-[0.95rem] font-semibold">For rental companies</p>
+          <h1 className="relative mt-3 text-[2.4rem] leading-[1.08] text-white sm:text-[3rem]">
+            List your equipment on Machina Rent
           </h1>
-          <p className="text-ink-foreground/75 relative max-w-[520px] text-[1.05rem]">
+          <p className="relative max-w-[520px] text-[1.05rem] text-white/70">
             For construction equipment rental companies in Turin and Piedmont. Publish your
             machines, receive requests that already include site, period and needs, and keep full
             control of availability, quotes and invoicing.
@@ -69,18 +63,20 @@ export function PartnerInfoView() {
             Register as a rental company <ArrowRight aria-hidden />
           </Link>
         </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/img/yard.svg"
-          alt="A rental yard with machines ready for hire"
-          className="h-full min-h-[260px] w-full object-cover"
-        />
+        <div className="relative min-h-[260px]">
+          <MachinePhoto
+            src="/img/wheel_loader.png"
+            alt="A wheel loader on a construction site"
+            sizes="(min-width: 1024px) 560px, 100vw"
+            eager
+          />
+        </div>
       </section>
 
       <div className="mb-12 grid gap-5 md:grid-cols-3">
         {POINTS.map(({ icon: Icon, title, body }) => (
           <Card key={title} className="lift">
-            <span className="from-primary mb-4 inline-flex size-12 items-center justify-center rounded-xl bg-gradient-to-br to-[#f0a052] text-white shadow-[0_10px_24px_-10px_rgb(236_116_48/0.8)]">
+            <span className="bg-primary text-ink mb-4 inline-flex size-12 items-center justify-center rounded-xl">
               <Icon aria-hidden className="size-5" />
             </span>
             <h3>{title}</h3>
@@ -96,15 +92,9 @@ export function PartnerInfoView() {
           {STEPS.map((s, i) => (
             <li
               key={s}
-              className="border-border/70 bg-card shadow-soft relative overflow-hidden rounded-2xl border p-6"
+              className="border-border bg-card relative overflow-hidden rounded-xl border p-6"
             >
-              <span
-                aria-hidden
-                className="font-heading text-primary/10 absolute -top-3 -right-1 text-[5.5rem] leading-none font-semibold"
-              >
-                {i + 1}
-              </span>
-              <span className="bg-ink inline-flex size-9 items-center justify-center rounded-full text-[0.85rem] font-bold text-white">
+              <span className="bg-ink text-primary inline-flex size-9 items-center justify-center rounded-full text-[0.9rem] font-bold">
                 {i + 1}
               </span>
               <p className="relative m-0 mt-4 font-medium">{s}</p>
@@ -132,30 +122,22 @@ export function PartnerInfoView() {
                   : undefined
               }
             >
-              {i === 1 && (
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_100%_at_100%_0%,rgb(236_116_48/0.35),transparent_70%)]"
-                />
-              )}
               <div className="relative flex items-center justify-between gap-2">
-                <h3
-                  className={cn(
-                    "font-heading m-0 text-[1.5rem] font-medium",
-                    i === 1 && "text-white"
-                  )}
-                >
+                <h3 className={cn("m-0 text-[1.5rem] font-bold", i === 1 && "text-white")}>
                   {p.name}
                 </h3>
                 {i === 1 && (
-                  <span className="bg-sun text-ink rounded-full px-2.5 py-0.5 text-[0.75rem] font-bold">
+                  <span className="bg-primary text-ink rounded-full px-2.5 py-0.5 text-[0.75rem] font-bold">
                     Lower commission
                   </span>
                 )}
               </div>
               <div className="relative mt-4 flex items-baseline gap-2">
                 <span
-                  className={cn("font-heading text-[2.8rem] leading-none", i === 1 && "text-white")}
+                  className={cn(
+                    "text-[2.8rem] leading-none font-bold tracking-[-0.03em]",
+                    i === 1 && "text-white"
+                  )}
                 >
                   {eur(p.monthly)}
                 </span>
@@ -164,7 +146,7 @@ export function PartnerInfoView() {
                 </span>
               </div>
               <p className="relative mt-3 mb-0 text-[1.02rem]">
-                <b className={i === 1 ? "text-sun" : "text-primary"}>{pct(p.commissionRate)}</b>{" "}
+                <b className={i === 1 ? "text-primary" : "text-brand"}>{pct(p.commissionRate)}</b>{" "}
                 commission on confirmed orders
               </p>
               <p

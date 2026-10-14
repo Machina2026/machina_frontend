@@ -26,20 +26,18 @@ export function Stat({
     <Link
       href={href}
       className={cn(
-        "group border-border/70 bg-card text-foreground shadow-soft lift relative block overflow-hidden rounded-2xl border p-5 no-underline hover:no-underline",
-        highlight && "from-primary-soft border-[#eecdb0] bg-gradient-to-br via-white to-white"
+        "group border-border bg-card text-foreground lift relative block overflow-hidden rounded-xl border p-5 no-underline hover:no-underline",
+        highlight && "border-primary"
       )}
     >
-      {highlight && (
-        <span aria-hidden className="bg-primary absolute inset-y-0 left-0 w-1 rounded-r-full" />
-      )}
+      {highlight && <span aria-hidden className="bg-primary absolute inset-x-0 top-0 h-1" />}
       <div className="flex items-start justify-between gap-3">
         {Icon && (
           <span
             className={cn(
               "icon-tile size-10",
               !highlight && "bg-muted text-muted-foreground",
-              highlight && "bg-primary text-white shadow-[0_8px_18px_-8px_rgb(208_98_26/0.8)]"
+              highlight && "bg-primary text-ink"
             )}
           >
             <Icon aria-hidden />
@@ -47,15 +45,10 @@ export function Stat({
         )}
         <ArrowUpRight
           aria-hidden
-          className="text-faint group-hover:text-primary size-4 transition-[color,transform] group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+          className="text-faint group-hover:text-foreground size-4 transition-[color,transform] group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
         />
       </div>
-      <div
-        className={cn(
-          "font-heading mt-4 text-[2.4rem] leading-none font-medium tabular-nums",
-          highlight && "text-primary"
-        )}
-      >
+      <div className="mt-4 text-[2.4rem] leading-none font-bold tracking-[-0.03em] tabular-nums">
         {n}
       </div>
       <div className="text-muted-foreground mt-1.5 text-[0.9rem] leading-snug">{label}</div>
@@ -68,7 +61,7 @@ function greeting(date = new Date()) {
   return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"
 }
 
-/** Dark greeting banner at the top of an area overview. */
+/** Greeting at the top of an area overview. */
 export function WelcomeBanner({
   name,
   org,
@@ -82,37 +75,18 @@ export function WelcomeBanner({
 }) {
   const first = name?.split(" ")[0]
   return (
-    <section className="bg-ink text-ink-foreground shadow-lift relative mb-6 overflow-hidden rounded-3xl">
-      <div className="bg-blueprint absolute inset-0" aria-hidden />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(55%_120%_at_100%_0%,rgb(236_116_48/0.42),transparent_65%),radial-gradient(40%_80%_at_0%_100%,rgb(245_181_46/0.12),transparent_70%)]"
-      />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/img/hero-site.svg"
-        alt=""
-        className="pointer-events-none absolute right-0 bottom-0 hidden h-full w-[55%] object-cover object-right-bottom opacity-60 md:block"
-      />
-      <div className="relative max-w-[580px] p-6 sm:p-9">
-        <span className="text-sun inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-[0.68rem] font-semibold tracking-[0.16em] uppercase">
-          <span className="bg-sun size-1.5 rounded-full" aria-hidden />
-          {org ? stripDemo(org) : ""}
-        </span>
-        <h1 className="mt-4 mb-2 text-[2.2rem] text-white sm:text-[2.7rem]">
+    <section className="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <div className="min-w-0">
+        {org && (
+          <p className="text-muted-foreground mb-1 text-[0.92rem] font-medium">{stripDemo(org)}</p>
+        )}
+        <h1 className="mb-1.5">
           {greeting()}
-          {first ? (
-            <>
-              , <span className="text-gradient">{first}</span>
-            </>
-          ) : (
-            ""
-          )}
+          {first ? `, ${first}` : ""}
         </h1>
-        <p className="text-ink-foreground/75 m-0 text-[1.05rem]">{subtitle}</p>
-        {actions && <div className="mt-6 flex flex-wrap gap-2">{actions}</div>}
+        <p className="text-muted-foreground m-0 text-[1.02rem]">{subtitle}</p>
       </div>
-      <div aria-hidden className="hazard relative h-1.5 opacity-80" />
+      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </section>
   )
 }
@@ -156,7 +130,7 @@ export function ActionList({ actions }: { actions: ActionItem[] }) {
         <Link
           key={i}
           href={a.link}
-          className="group text-foreground border-border/70 hover:border-primary/40 hover:bg-primary-soft/40 flex items-center gap-3 rounded-xl border px-3.5 py-3 no-underline transition-colors hover:no-underline"
+          className="group text-foreground border-border hover:border-primary/40 hover:bg-primary-soft/40 flex items-center gap-3 rounded-xl border px-3.5 py-3 no-underline transition-colors hover:no-underline"
         >
           <Badge tone={a.kind === "tax" ? "warn" : "accent"}>{ACTION_KIND[a.kind] ?? a.kind}</Badge>
           <span className="flex-1 text-[0.93rem] leading-snug">{a.text}</span>

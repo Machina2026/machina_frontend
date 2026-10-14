@@ -26,7 +26,7 @@ function OfferDetails({ o, prov }: { o: PublicOffer; prov: string }) {
   const inZone = prov ? o.zones.includes(prov) : null
   return (
     <>
-      <div className="bg-secondary border-border/70 my-4 grid gap-4 rounded-xl border p-4 text-[0.92rem] sm:grid-cols-2 lg:grid-cols-3">
+      <div className="bg-secondary border-border my-4 grid gap-4 rounded-xl border p-4 text-[0.92rem] sm:grid-cols-2 lg:grid-cols-3">
         <Detail k="Rates (excl. VAT)">
           {eur(o.prices.day)}/day
           {o.prices.week && (
@@ -125,7 +125,7 @@ export function ModelDetailView({ id, query }: { id: string; query: Record<strin
                 [`${m.brand} ${m.model}`],
               ]}
             />
-            <section className="border-border/70 bg-card shadow-lift mb-6 grid overflow-hidden rounded-3xl border lg:grid-cols-[1.05fr_1fr]">
+            <section className="border-border bg-card shadow-lift mb-6 grid overflow-hidden rounded-2xl border lg:grid-cols-[1.05fr_1fr]">
               <div className="bg-ink relative aspect-[3/2] overflow-hidden lg:aspect-auto lg:min-h-[420px]">
                 <MachinePhoto
                   src={m.image}
@@ -165,15 +165,11 @@ export function ModelDetailView({ id, query }: { id: string; query: Record<strin
                 </div>
                 {offers.length > 0 && (
                   <div className="bg-ink text-ink-foreground relative mt-auto flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-2xl p-5">
-                    <div
-                      aria-hidden
-                      className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_120%_at_100%_0%,rgb(236_116_48/0.35),transparent_70%)]"
-                    />
                     <div className="relative">
                       <div className="text-ink-foreground/65 text-[0.82rem]">
                         {offers.length} {offers.length === 1 ? "offer" : "offers"} · from
                       </div>
-                      <div className="font-heading text-sun text-[2.2rem] leading-none font-medium">
+                      <div className="text-primary text-[2.2rem] leading-none font-bold">
                         {eurWhole(Math.min(...offers.map((o) => o.prices.day ?? Infinity)))}
                         <span className="text-ink-foreground/60 font-sans text-sm">
                           {" "}
@@ -291,9 +287,7 @@ export function ModelDetailView({ id, query }: { id: string; query: Record<strin
                     </div>
                     <div className="flex flex-wrap items-center gap-4">
                       <div className="text-right leading-tight">
-                        <span className="font-heading text-[1.8rem] font-medium">
-                          {eur(o.prices.day)}
-                        </span>
+                        <span className="text-[1.8rem] font-bold">{eur(o.prices.day)}</span>
                         <span className="text-muted-foreground text-sm"> /day</span>
                         {o.prices.week && <Small>{eur(o.prices.week)} /week</Small>}
                       </div>

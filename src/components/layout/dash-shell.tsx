@@ -29,6 +29,8 @@ import { useMe } from "@/lib/machina/hooks"
 import type { AdminStats, ClientSummary, PartnerSummary } from "@/lib/machina/types"
 import { cn } from "@/lib/utils"
 
+import { Container } from "./container"
+
 export const buyerSummaryKey = ["buyer", "summary"] as const
 export const supplierSummaryKey = ["supplier", "summary"] as const
 export const adminStatsKey = ["admin", "stats"] as const
@@ -137,27 +139,15 @@ function Menu({ items, area }: { items: MenuItem[]; area: Area }) {
             href={href}
             aria-current={on ? "page" : undefined}
             className={cn(
-              "text-ink-foreground/70 group flex shrink-0 items-center gap-3 rounded-xl px-2.5 py-2 text-[0.92rem] no-underline transition-colors hover:bg-white/[0.06] hover:text-white hover:no-underline",
+              "text-muted-foreground hover:bg-secondary hover:text-foreground relative flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-[0.93rem] font-medium no-underline transition-colors hover:no-underline",
               on &&
-                "from-primary/90 bg-gradient-to-r to-[#d9742f]/70 font-medium text-white shadow-[0_8px_20px_-10px_rgb(236_116_48/0.8)] hover:bg-transparent"
+                "bg-primary-soft text-foreground hover:bg-primary-soft md:before:bg-primary md:before:absolute md:before:inset-y-2 md:before:-left-3 md:before:w-1 md:before:rounded-r-full"
             )}
           >
-            <span
-              className={cn(
-                "inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] transition-colors group-hover:bg-white/10",
-                on && "bg-white/20 group-hover:bg-white/20"
-              )}
-            >
-              <Icon aria-hidden className="size-[17px]" />
-            </span>
+            <Icon aria-hidden className={cn("size-[18px] shrink-0", on && "text-ink")} />
             <span className="flex-1 leading-snug">{label}</span>
             {!!count && (
-              <span
-                className={cn(
-                  "bg-sun text-ink min-w-5 rounded-full px-1.5 text-center text-[0.72rem] font-bold",
-                  on && "text-primary-hover bg-white"
-                )}
-              >
+              <span className="bg-ink text-primary min-w-5 rounded-full px-1.5 text-center text-[0.72rem] font-bold">
                 {count}
               </span>
             )}
@@ -188,16 +178,12 @@ const AREA_LABEL: Record<Area, string> = {
 export function DashShell({ area, children }: { area: Area; children: React.ReactNode }) {
   const me = useMe().data
   return (
-    <div className="grid items-start gap-6 md:grid-cols-[280px_minmax(0,1fr)] lg:gap-8">
-      <aside className="no-print bg-ink text-ink-foreground shadow-lift relative overflow-hidden rounded-3xl p-3 md:sticky md:top-[96px]">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(80%_100%_at_0%_0%,rgb(236_116_48/0.28),transparent_70%)]"
-        />
-        <div className="relative mb-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+    <Container className="grid items-start gap-6 pt-8 pb-24 md:grid-cols-[260px_minmax(0,1fr)] lg:gap-8">
+      <aside className="no-print border-border bg-card rounded-xl border p-3 md:sticky md:top-[88px]">
+        <div className="border-border mb-3 flex items-center gap-3 border-b px-1 pt-1 pb-4">
           <span
             aria-hidden
-            className="from-primary inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br to-[#f0a052] text-[0.85rem] font-bold text-white"
+            className="bg-ink text-primary inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-[0.85rem] font-bold"
           >
             {(me?.org?.name ?? me?.user.name ?? "")
               .split(/\s+/)
@@ -206,19 +192,17 @@ export function DashShell({ area, children }: { area: Area; children: React.Reac
               .join("")}
           </span>
           <span className="min-w-0">
-            <span className="text-sun block text-[0.64rem] font-semibold tracking-[0.16em] uppercase">
+            <span className="text-muted-foreground block text-[0.78rem] font-medium">
               {AREA_LABEL[area]}
             </span>
-            <b className="mt-0.5 block truncate text-[0.95rem] leading-snug font-semibold text-white">
+            <b className="block truncate text-[0.95rem] leading-snug font-semibold">
               {me?.org ? stripDemo(me.org.name) : (me?.user.name ?? " ")}
             </b>
           </span>
         </div>
-        <div className="relative">
-          {area === "buyer" ? <BuyerNav /> : area === "supplier" ? <SupplierNav /> : <AdminNav />}
-        </div>
+        {area === "buyer" ? <BuyerNav /> : area === "supplier" ? <SupplierNav /> : <AdminNav />}
       </aside>
       <section className="min-w-0">{children}</section>
-    </div>
+    </Container>
   )
 }

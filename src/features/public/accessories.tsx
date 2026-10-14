@@ -46,7 +46,7 @@ export function AccessoriesView() {
                       href={`#${slug(group)}`}
                       className="border-border bg-card text-foreground hover:border-primary/40 inline-flex items-center gap-2 rounded-full border py-1.5 pr-3.5 pl-1.5 text-[0.88rem] font-medium no-underline hover:no-underline"
                     >
-                      <span className="bg-primary-soft text-primary inline-flex size-7 items-center justify-center rounded-full">
+                      <span className="bg-primary-soft text-brand inline-flex size-7 items-center justify-center rounded-full">
                         <Icon aria-hidden className="size-3.5" />
                       </span>
                       {group}
@@ -76,11 +76,11 @@ export function AccessoriesView() {
                               {(paid.length > 0 || included) && (
                                 <span className="bg-ink shrink-0 rounded-full px-2.5 py-1 text-[0.72rem] font-semibold whitespace-nowrap text-white">
                                   {included && !paid.length ? (
-                                    <span className="text-sun">Included</span>
+                                    <span className="text-primary">Included</span>
                                   ) : (
                                     <>
                                       from{" "}
-                                      <span className="text-sun">
+                                      <span className="text-primary">
                                         {eurWhole(Math.min(...paid))}
                                       </span>
                                       /day
@@ -95,14 +95,14 @@ export function AccessoriesView() {
                                 <Link
                                   key={m.id}
                                   href={`/models/${m.id}`}
-                                  className="bg-muted text-foreground hover:bg-primary-soft hover:text-primary-hover rounded-md border px-2 py-0.5 text-[0.8rem] font-medium no-underline hover:no-underline"
+                                  className="bg-muted text-foreground hover:bg-primary-soft hover:text-brand rounded-md border px-2 py-0.5 text-[0.8rem] font-medium no-underline hover:no-underline"
                                 >
                                   {m.label}
                                 </Link>
                               ))}
                             </div>
                             {a.availability.length ? (
-                              <ul className="border-border/70 m-0 mt-auto list-none divide-y rounded-xl border p-0 text-[0.88rem]">
+                              <ul className="border-border m-0 mt-auto list-none divide-y rounded-xl border p-0 text-[0.88rem]">
                                 {a.availability.map((x) => (
                                   <li
                                     key={x.offerId}

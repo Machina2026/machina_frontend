@@ -57,7 +57,7 @@ export function ChipCheck({
   return (
     <label
       className={cn(
-        "border-border-strong has-checked:border-primary has-checked:bg-primary-soft inline-flex cursor-pointer items-center gap-1.5 rounded-full border bg-white px-3.5 py-1.5 text-sm font-medium transition-colors",
+        "border-border-strong has-checked:border-ink has-checked:bg-primary-soft inline-flex cursor-pointer items-center gap-1.5 rounded-full border bg-white px-3.5 py-1.5 text-sm font-medium transition-colors",
         props.disabled && "cursor-not-allowed opacity-60"
       )}
     >

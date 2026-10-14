@@ -29,7 +29,7 @@ function Progress({ ov }: { ov: RequestOverview }) {
   const segs: [number, string][] = [
     [c.accepted ?? 0, "bg-ok"],
     [c.sent ?? 0, "bg-primary"],
-    [c.awaiting_partner ?? 0, "bg-[#e8c46a]"],
+    [c.awaiting_partner ?? 0, "bg-ink/35"],
     [
       (c.declined_by_partner ?? 0) +
         (c.rejected_by_client ?? 0) +
@@ -299,9 +299,7 @@ export function BuyerQuoteDetail({ id }: { id: string }) {
                         ? "Machina draft"
                         : `Quote v${v.n}`}
                   </div>
-                  <div className="font-heading text-[2rem] leading-none font-medium">
-                    {eur(v.totals.gross)}
-                  </div>
+                  <div className="text-[2rem] leading-none font-bold">{eur(v.totals.gross)}</div>
                   <Small className="mt-1.5">
                     {eur(v.totals.net)} + VAT {v.totals.vatRate}%
                     {!v.totals.complete && " · partial, some lines still to price"}

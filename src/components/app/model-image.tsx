@@ -105,7 +105,7 @@ export function ModelImage({
   return (
     <div
       className={cn(
-        "border-border/60 bg-muted relative aspect-[16/10] overflow-hidden rounded-xl border",
+        "border-border bg-muted relative aspect-[16/10] overflow-hidden rounded-xl border",
         className
       )}
     >

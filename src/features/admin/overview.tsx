@@ -125,7 +125,7 @@ export function AdminOverview() {
                           <Link
                             key={c.id}
                             href={`/admin/companies/${c.id}`}
-                            className="group text-foreground border-border/70 hover:border-primary/40 hover:bg-primary-soft/40 flex items-center gap-3 rounded-xl border px-3.5 py-3 no-underline transition-colors hover:no-underline"
+                            className="group text-foreground border-border hover:border-primary/40 hover:bg-primary-soft/40 flex items-center gap-3 rounded-xl border px-3.5 py-3 no-underline transition-colors hover:no-underline"
                           >
                             <span className="min-w-0 flex-1">
                               <b className="block truncate text-[0.93rem]">{c.name}</b>
@@ -136,7 +136,7 @@ export function AdminOverview() {
                             </span>
                             <ChevronRight
                               aria-hidden
-                              className="text-faint group-hover:text-primary size-4 shrink-0 transition-transform group-hover:translate-x-0.5"
+                              className="text-faint group-hover:text-brand size-4 shrink-0 transition-transform group-hover:translate-x-0.5"
                             />
                           </Link>
                         ))}

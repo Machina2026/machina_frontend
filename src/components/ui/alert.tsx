@@ -6,11 +6,11 @@ import { cn } from "@/lib/utils"
 const alertVariants = cva("rounded-xl border px-4 py-3.5 text-[0.95rem] leading-relaxed", {
   variants: {
     tone: {
-      neutral: "border-border bg-muted",
-      info: "border-[#c9dcec] bg-info-soft",
-      warn: "border-[#f0dca5] bg-warn-soft",
-      bad: "border-[#f1c7c2] bg-bad-soft",
-      ok: "border-[#c4e3d1] bg-ok-soft",
+      neutral: "border-border bg-secondary",
+      info: "border-[#d3e3f1] bg-info-soft",
+      warn: "border-[#f6e2a4] bg-warn-soft",
+      bad: "border-[#f5cdc8] bg-bad-soft",
+      ok: "border-[#cde8d9] bg-ok-soft",
     },
     size: { default: "", sm: "text-sm" },
   },

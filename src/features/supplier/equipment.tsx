@@ -780,7 +780,7 @@ function EditorForm({
               htmlFor="of-photos"
               className="border-border-strong bg-secondary hover:border-primary hover:bg-primary-soft focus-within:border-primary mt-3 flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors"
             >
-              <ImagePlus aria-hidden className="text-primary size-7" />
+              <ImagePlus aria-hidden className="text-brand size-7" />
               <span className="font-semibold">
                 {photos.isPending ? "Uploading…" : "Add photos of this machine"}
               </span>

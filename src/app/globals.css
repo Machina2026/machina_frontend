@@ -9,7 +9,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --font-heading: var(--font-geist-sans);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -26,7 +26,7 @@
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
-  --color-gold: var(--gold);
+  --color-brand: var(--brand);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -42,61 +42,61 @@
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-ink-foreground: var(--ink-foreground);
+  --color-sun: var(--primary);
+  --color-sun-soft: var(--primary-soft);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --color-sun: var(--sun);
-  --color-sun-soft: var(--sun-soft);
-  --shadow-soft: 0 1px 2px rgb(20 18 14 / 0.04), 0 10px 28px -14px rgb(20 18 14 / 0.16);
-  --shadow-lift: 0 2px 6px rgb(20 18 14 / 0.06), 0 24px 48px -20px rgb(20 18 14 / 0.32);
-  --shadow-glow: 0 12px 32px -12px rgb(217 104 30 / 0.6);
+  --radius-xl: calc(var(--radius) * 1.3);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-3xl: calc(var(--radius) * 2);
+  --shadow-soft: 0 1px 2px rgb(17 19 22 / 0.04);
+  --shadow-lift: 0 1px 2px rgb(17 19 22 / 0.04), 0 12px 32px -12px rgb(17 19 22 / 0.18);
 }
 
 /*
- * "Ink & copper": warm ivory surfaces, deep ink, a refined copper accent and a
- * champagne-gold detail colour. Text colours meet WCAG AA on every surface.
+ * Clean marketplace look: white surfaces, near-black text, one bright safety
+ * yellow for actions (always with dark text on it), and a dark amber for the
+ * few places that need a brand-coloured text. Text colours meet WCAG AA.
  */
 :root {
-  --background: #f6f4ef;
-  --foreground: #1b1c1f;
+  --background: #ffffff;
+  --foreground: #111316;
   --card: #ffffff;
-  --card-foreground: #1b1c1f;
+  --card-foreground: #111316;
   --popover: #ffffff;
-  --popover-foreground: #1b1c1f;
-  --primary: #c05a17;
-  --primary-hover: #9c4710;
-  --primary-foreground: #ffffff;
-  --primary-soft: #f9ebdf;
-  --gold: #d6ad5f;
-  /* Safety yellow: highlights on dark surfaces only (not for text on light). */
-  --sun: #f5b52e;
-  --sun-soft: #fdf1d3;
-  --secondary: #f9f8f5;
-  --secondary-foreground: #1b1c1f;
-  --muted: #f3f1ec;
-  --muted-foreground: #4d5157;
-  --faint: #6f737a;
-  --accent: #efece5;
-  --accent-foreground: #1b1c1f;
-  --destructive: #a8261d;
-  --border: #e4e0d7;
-  --border-strong: #cdc7ba;
-  --input: #cdc7ba;
-  --ring: #c05a17;
-  --ok: #1d6f47;
-  --ok-soft: #e6f2eb;
-  --warn: #85560a;
-  --warn-soft: #fbf2dc;
-  --bad: #a8261d;
-  --bad-soft: #fae8e5;
-  --info: #22567f;
-  --info-soft: #e6eff6;
-  --ink: #121316;
-  --ink-2: #1d1f24;
-  --ink-foreground: #f2efe8;
-  --radius: 0.875rem;
+  --popover-foreground: #111316;
+  /* Safety yellow: buttons, highlights, active states. Never as text on white. */
+  --primary: #ffc72c;
+  --primary-hover: #f5b800;
+  --primary-foreground: #111316;
+  --primary-soft: #fff6d9;
+  /* Brand colour for text and icons on light surfaces. */
+  --brand: #8a5a00;
+  --secondary: #f6f6f4;
+  --secondary-foreground: #111316;
+  --muted: #f4f4f2;
+  --muted-foreground: #565b62;
+  --faint: #6e737a;
+  --accent: #f1f1ee;
+  --accent-foreground: #111316;
+  --destructive: #b42318;
+  --border: #e6e6e3;
+  --border-strong: #cfcfca;
+  --input: #cfcfca;
+  --ring: #111316;
+  --ok: #1a7048;
+  --ok-soft: #e8f5ee;
+  --warn: #8a5a00;
+  --warn-soft: #fff6d9;
+  --bad: #b42318;
+  --bad-soft: #fdecea;
+  --info: #1f5a8a;
+  --info-soft: #eaf2f9;
+  --ink: #111316;
+  --ink-2: #1c1f23;
+  --ink-foreground: #f4f4f2;
+  --radius: 0.75rem;
 }
 
 @layer base {
@@ -106,60 +106,41 @@
   html {
     @apply font-sans;
     text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
   }
   body {
     @apply bg-background text-foreground text-base leading-relaxed;
-    font-feature-settings: "ss01", "cv11";
-    /* Warm ambient light plus a faint paper grain, fixed behind the content. */
-    background-image:
-      radial-gradient(1100px 520px at 105% -8%, rgb(185 88 26 / 0.09), transparent 70%),
-      radial-gradient(900px 480px at -8% 18%, rgb(201 164 92 / 0.11), transparent 70%),
-      url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27160%27 height=%27160%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%272%27 stitchTiles=%27stitch%27/%3E%3CfeColorMatrix values=%270 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0 0.05 0 0 0 0.05 0%27/%3E%3C/filter%3E%3Crect width=%27160%27 height=%27160%27 filter=%27url(%23n)%27/%3E%3C/svg%3E");
-    background-attachment: fixed, fixed, scroll;
   }
   h1,
   h2,
   h3,
   h4 {
-    @apply leading-tight font-semibold;
-  }
-  /* Default spacing below headings; components override it with their own margin classes. */
-  h1 {
-    @apply mb-3;
-  }
-  h2 {
-    @apply mb-3;
-  }
-  h3,
-  h4 {
-    @apply mb-3;
-  }
-  /* Serif display type for the larger headings; small headings stay in the sans for legibility. */
-  h1,
-  h2 {
-    font-family: var(--font-heading);
-    font-optical-sizing: auto;
-    font-weight: 560;
-    letter-spacing: -0.015em;
+    @apply mb-3 leading-tight font-bold;
+    letter-spacing: -0.02em;
   }
   h1 {
-    @apply text-[2.1rem] sm:text-[2.6rem];
+    @apply text-[2rem] sm:text-[2.5rem];
+    letter-spacing: -0.03em;
   }
   h2 {
     @apply text-[1.6rem];
   }
   h3 {
-    @apply text-[1.12rem] tracking-[-0.005em];
+    @apply text-[1.1rem] font-semibold;
+    letter-spacing: -0.01em;
+  }
+  h4 {
+    @apply font-semibold;
   }
   a {
-    @apply text-primary-hover underline-offset-4;
+    @apply text-foreground decoration-foreground/30 hover:decoration-foreground underline-offset-4;
   }
   ::selection {
-    background: #f1d9c3;
+    background: #ffe9a8;
   }
   input[type="checkbox"],
   input[type="radio"] {
-    @apply accent-primary;
+    accent-color: var(--ink);
   }
 }
 
@@ -168,10 +149,10 @@
     @apply w-full border-collapse text-[0.95rem];
   }
   .data-table th {
-    @apply border-border bg-muted/70 text-muted-foreground border-b px-4 py-3.5 text-left text-[0.72rem] font-semibold tracking-[0.08em] whitespace-nowrap uppercase;
+    @apply border-border bg-secondary text-muted-foreground border-b px-4 py-3 text-left text-[0.78rem] font-semibold whitespace-nowrap;
   }
   .data-table td {
-    @apply border-border/80 border-b px-4 py-3.5 align-top;
+    @apply border-border border-b px-4 py-3.5 align-top;
   }
   .data-table tr:last-child td {
     @apply border-b-0;
@@ -180,7 +161,7 @@
     @apply text-right whitespace-nowrap tabular-nums;
   }
   .data-table tr.clickable {
-    @apply hover:bg-primary-soft/45 cursor-pointer transition-colors;
+    @apply hover:bg-secondary cursor-pointer transition-colors;
   }
   .data-table tr.to-confirm td {
     @apply bg-warn-soft;
@@ -189,44 +170,21 @@
   .data-table select {
     @apply min-h-9 py-1;
   }
-  /* Dark panel with a faint blueprint grid (hero, sidebars, call-to-action). */
-  .bg-blueprint {
-    background-image:
-      linear-gradient(to right, rgb(255 255 255 / 0.045) 1px, transparent 1px),
-      linear-gradient(to bottom, rgb(255 255 255 / 0.045) 1px, transparent 1px);
-    background-size: 40px 40px;
-  }
-  /* Small uppercase label above a section or value. */
+  /* Small label above a section or value. */
   .eyebrow {
-    @apply text-primary inline-flex items-center gap-2 text-[0.72rem] font-semibold tracking-[0.16em] uppercase;
+    @apply text-muted-foreground text-[0.9rem] font-semibold;
   }
-  .eyebrow::before {
-    content: "";
-    @apply inline-block h-0.5 w-5 rounded-full bg-current;
-  }
-  /* Warm gradient for highlighted words in large headings on dark panels. */
-  .text-gradient {
-    background: linear-gradient(100deg, #ffd48f 0%, #f7a55b 45%, #ec7430 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  /* Soft dotted texture for light panels. */
-  .bg-dots {
-    background-image: radial-gradient(rgb(20 18 14 / 0.1) 1px, transparent 1px);
-    background-size: 18px 18px;
-  }
-  /* Hazard stripes, used as a thin accent rule. */
-  .hazard {
-    background-image: repeating-linear-gradient(-45deg, var(--sun) 0 9px, var(--ink) 9px 18px);
-  }
-  /* Card that rises on hover. */
+  /* Card that rises slightly on hover. */
   .lift {
-    @apply hover:shadow-lift transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-1;
+    @apply hover:shadow-lift hover:border-border-strong transition-[box-shadow,border-color] duration-200;
   }
   /* Tinted square that holds an icon. */
   .icon-tile {
-    @apply bg-primary-soft text-primary inline-flex size-11 shrink-0 items-center justify-center rounded-xl [&_svg]:size-5;
+    @apply bg-primary-soft text-ink inline-flex size-11 shrink-0 items-center justify-center rounded-xl [&_svg]:size-5;
+  }
+  /* Full-bleed band inside the centred <main>; body clips the 100vw overflow. */
+  .bleed {
+    @apply mx-[calc(50%-50vw)];
   }
 }
 

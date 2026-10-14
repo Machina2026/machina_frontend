@@ -14,6 +14,7 @@ import { useMe, useResetSessionData } from "@/lib/machina/hooks"
 import type { SessionRole } from "@/lib/machina/types"
 import { cn } from "@/lib/utils"
 
+import { Container } from "./container"
 import { Logo } from "./site-chrome"
 
 const PUBLIC_NAV: [string, string][] = [
@@ -86,12 +87,12 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="no-print border-border/70 sticky top-0 z-30 border-b bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70">
-      <div className="mx-auto flex h-[72px] max-w-[1240px] items-center gap-3 px-4 sm:gap-6">
+    <header className="no-print border-border sticky top-0 z-30 border-b bg-white">
+      <Container className="flex h-16 items-center gap-3 sm:gap-8">
         <div className="flex shrink-0 items-center gap-2.5">
           <Logo />
           {badge && (
-            <span className="bg-ink text-sun rounded-full px-2.5 py-1 text-[0.66rem] font-bold tracking-[0.14em] uppercase">
+            <span className="bg-ink rounded-md px-2 py-0.5 text-[0.7rem] font-semibold text-white">
               {badge}
             </span>
           )}
@@ -99,7 +100,7 @@ export function SiteHeader() {
         <nav
           aria-label="Main"
           className={cn(
-            "max-lg:shadow-lift flex-1 items-center gap-1 max-lg:absolute max-lg:inset-x-0 max-lg:top-[72px] max-lg:flex-col max-lg:items-stretch max-lg:border-b max-lg:bg-white max-lg:p-3",
+            "max-lg:shadow-lift flex-1 items-center gap-6 max-lg:absolute max-lg:inset-x-0 max-lg:top-16 max-lg:flex-col max-lg:items-stretch max-lg:gap-0 max-lg:border-b max-lg:bg-white max-lg:p-2",
             open ? "flex" : "max-lg:hidden lg:flex"
           )}
         >
@@ -112,8 +113,9 @@ export function SiteHeader() {
                 onClick={() => setOpen(false)}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "text-foreground/75 hover:text-foreground hover:bg-muted rounded-full px-3.5 py-2 text-[0.94rem] no-underline transition-colors hover:no-underline",
-                  active && "bg-primary-soft text-primary-hover hover:bg-primary-soft font-medium"
+                  "text-foreground/70 hover:text-foreground relative py-2 text-[0.95rem] font-medium no-underline transition-colors hover:no-underline max-lg:rounded-lg max-lg:px-3",
+                  active &&
+                    "text-foreground lg:after:bg-primary max-lg:bg-primary-soft lg:after:absolute lg:after:inset-x-0 lg:after:-bottom-[12px] lg:after:h-[3px] lg:after:rounded-full"
                 )}
               >
                 {label}
@@ -126,9 +128,9 @@ export function SiteHeader() {
               onClick={() => setOpen(false)}
               aria-current={pathname.startsWith(areaHref) ? "page" : undefined}
               className={cn(
-                "text-foreground/75 hover:text-foreground hover:bg-muted inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[0.94rem] no-underline transition-colors hover:no-underline",
+                "text-foreground/70 hover:text-foreground relative inline-flex items-center gap-1.5 py-2 text-[0.95rem] font-medium no-underline transition-colors hover:no-underline max-lg:rounded-lg max-lg:px-3",
                 pathname.startsWith(areaHref) &&
-                  "bg-ink hover:bg-ink-2 font-medium text-white hover:text-white"
+                  "text-foreground lg:after:bg-primary max-lg:bg-primary-soft lg:after:absolute lg:after:inset-x-0 lg:after:-bottom-[12px] lg:after:h-[3px] lg:after:rounded-full"
               )}
             >
               <LayoutDashboard aria-hidden className="size-4" />
@@ -140,36 +142,36 @@ export function SiteHeader() {
           {(!role || role === "client") && (
             <Link
               href="/request"
-              className={buttonVariants({ size: "sm", className: "relative rounded-full" })}
+              className={buttonVariants({ size: "sm", className: "relative" })}
               title="Request draft"
             >
               <ClipboardList aria-hidden />
               <span className="sr-only sm:not-sr-only">Request</span>
               {draft.items.length > 0 && (
-                <span className="bg-primary ring-background absolute -top-1.5 -right-1.5 inline-flex min-w-5 items-center justify-center rounded-full px-1 text-[0.7rem] font-bold text-white ring-2">
+                <span className="bg-primary text-ink ring-background absolute -top-1.5 -right-1.5 inline-flex min-w-5 items-center justify-center rounded-full px-1 text-[0.7rem] font-bold ring-2">
                   {draft.items.length}
                 </span>
               )}
             </Link>
           )}
           {me ? (
-            <div className="border-border/80 flex items-center gap-2 rounded-full border bg-white py-1 pr-1 pl-1 shadow-[0_1px_2px_rgb(20_18_14/0.05)]">
+            <div className="flex items-center gap-2 pl-1">
               <span
                 aria-hidden
-                className="from-primary inline-flex size-8 items-center justify-center rounded-full bg-gradient-to-br to-[#e2883e] text-[0.75rem] font-bold text-white"
+                className="bg-ink text-primary inline-flex size-8 items-center justify-center rounded-full text-[0.75rem] font-bold"
               >
                 {initials(me.user.name)}
               </span>
               <span className="hidden max-w-[180px] min-w-0 leading-tight md:block">
-                <b className="block truncate text-[0.82rem] font-semibold">{me.user.name}</b>
-                <span className="text-muted-foreground block truncate text-[0.72rem]">
+                <b className="block truncate text-[0.84rem] font-semibold">{me.user.name}</b>
+                <span className="text-muted-foreground block truncate text-[0.74rem]">
                   {me.org ? stripDemo(me.org.name) : "Machina staff"}
                 </span>
               </span>
               <Button
                 size="icon"
                 variant="ghost"
-                className="size-8 rounded-full"
+                className="size-8"
                 onClick={signOut}
                 aria-label="Sign out"
                 title="Sign out"
@@ -180,18 +182,14 @@ export function SiteHeader() {
           ) : (
             <Link
               href="/login"
-              className={buttonVariants({
-                size: "sm",
-                variant: "primary",
-                className: "rounded-full px-4",
-              })}
+              className={buttonVariants({ size: "sm", variant: "primary", className: "px-4" })}
             >
               Sign in
             </Link>
           )}
           <Button
             size="icon"
-            className="rounded-full lg:hidden"
+            className="lg:hidden"
             aria-label="Menu"
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
@@ -199,7 +197,7 @@ export function SiteHeader() {
             {open ? <X /> : <Menu />}
           </Button>
         </div>
-      </div>
+      </Container>
     </header>
   )
 }

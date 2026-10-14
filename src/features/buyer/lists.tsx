@@ -59,7 +59,7 @@ export function BuyerOverview() {
                 <Link href="/catalog" className={buttonVariants({ variant: "primary" })}>
                   Search for a machine
                 </Link>
-                <Link href="/assistant" className={buttonVariants({ variant: "glass" })}>
+                <Link href="/assistant" className={buttonVariants()}>
                   Describe a job
                 </Link>
               </>
@@ -128,7 +128,7 @@ export function BuyerOverview() {
                     <Link
                       key={o.id}
                       href={`/buyer/orders/${o.id}`}
-                      className="text-foreground border-border/70 hover:border-primary/40 hover:bg-primary-soft/40 flex justify-between gap-3 rounded-xl border px-3.5 py-3 no-underline transition-colors hover:no-underline"
+                      className="text-foreground border-border hover:border-primary/40 hover:bg-primary-soft/40 flex justify-between gap-3 rounded-xl border px-3.5 py-3 no-underline transition-colors hover:no-underline"
                     >
                       <span>
                         <b>{o.code}</b> · {o.partnerName}

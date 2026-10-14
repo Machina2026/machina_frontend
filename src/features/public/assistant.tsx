@@ -226,9 +226,9 @@ function Assistant() {
       )}
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="bg-card shadow-lift border-border/70 flex h-[min(72dvh,660px)] flex-col overflow-hidden rounded-3xl border">
+        <div className="bg-card shadow-lift border-border flex h-[min(72dvh,660px)] flex-col overflow-hidden rounded-2xl border">
           <div className="bg-ink flex items-center gap-3 px-5 py-3.5 text-white">
-            <span className="from-primary inline-flex size-9 items-center justify-center rounded-xl bg-gradient-to-br to-[#f0a052]">
+            <span className="bg-primary text-ink inline-flex size-9 items-center justify-center rounded-xl">
               <Sparkles aria-hidden className="size-4" />
             </span>
             <div className="leading-tight">
@@ -242,7 +242,7 @@ function Assistant() {
           <div
             ref={logRef}
             aria-live="polite"
-            className="bg-dots flex-1 space-y-3 overflow-y-auto bg-[#faf8f4] p-5"
+            className="bg-secondary flex-1 space-y-3 overflow-y-auto p-5"
           >
             {!conv.messages.length ? (
               <Bubble role="bot">
@@ -445,8 +445,8 @@ function Bubble({ role, children }: { role: "user" | "bot"; children: React.Reac
         className={cn(
           "max-w-[85%] px-4 py-3 text-[0.95rem] whitespace-pre-wrap shadow-[0_1px_2px_rgb(20_18_14/0.06)]",
           role === "user"
-            ? "from-primary rounded-2xl rounded-br-md bg-gradient-to-br to-[#d9742f] text-white"
-            : "border-border/70 rounded-2xl rounded-bl-md border bg-white"
+            ? "bg-ink rounded-2xl rounded-br-md text-white"
+            : "border-border rounded-2xl rounded-bl-md border bg-white"
         )}
       >
         {children}
@@ -471,7 +471,7 @@ function Options({
           key={o}
           type="button"
           onClick={() => onPick(o)}
-          className="text-primary-hover hover:bg-primary-soft hover:border-primary/50 cursor-pointer rounded-full border border-[#f5d2b0] bg-white px-3.5 py-1.5 text-left text-sm transition-colors"
+          className="text-brand hover:bg-primary-soft hover:border-primary/50 cursor-pointer rounded-full border border-[#f6e2a4] bg-white px-3.5 py-1.5 text-left text-sm transition-colors"
         >
           {o}
         </button>

@@ -99,12 +99,12 @@ export function InviteView({ token }: { token: string }) {
     retry: false,
   })
   return (
-    <section className="border-border/70 bg-card shadow-lift grid overflow-hidden rounded-3xl border lg:grid-cols-[1fr_1.05fr]">
+    <section className="border-border bg-card shadow-lift grid overflow-hidden rounded-2xl border lg:grid-cols-[1fr_1.05fr]">
       <AuthBrandPanel
         kicker="You're invited"
         title={
           <>
-            Join <span className="text-gradient">Machina Rent</span>
+            Join <span className="text-primary">Machina Rent</span>
           </>
         }
         points={[

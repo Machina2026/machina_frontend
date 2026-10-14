@@ -98,7 +98,7 @@ export function TableWrap({
   return (
     <div
       className={cn(
-        "border-border/70 bg-card shadow-soft overflow-x-auto rounded-2xl border",
+        "border-border bg-card shadow-soft overflow-x-auto rounded-2xl border",
         className
       )}
     >
