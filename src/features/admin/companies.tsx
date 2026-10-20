@@ -36,6 +36,7 @@ import type {
 } from "@/lib/machina/types"
 import { cn } from "@/lib/utils"
 
+import { CreditBadge, CreditPanel } from "./credit"
 import { AuditList, Pager, pageOf, SearchBox, useAdminAction, useUrlFilters } from "./shared"
 
 const STATUS_TABS: (CompanyStatus | "")[] = ["pending", "approved", "rejected", "suspended", ""]
@@ -61,6 +62,7 @@ const M = defineMessages({
     location: "Location",
     status: "Status",
     users: "Users",
+    credit: "Credit score",
     registered: "Registered",
     vat: (v: string) => `VAT ${v}`,
     nothingToReview: "Nothing to review.",
@@ -123,6 +125,7 @@ const M = defineMessages({
     location: "Località",
     status: "Stato",
     users: "Utenti",
+    credit: "Affidabilità",
     registered: "Registrata",
     vat: (v: string) => `P. IVA ${v}`,
     nothingToReview: "Niente da valutare.",
@@ -234,6 +237,7 @@ export function AdminCompanies({ query }: { query: Record<string, string> }) {
                     <th>{t.type}</th>
                     <th>{t.location}</th>
                     <th>{t.status}</th>
+                    <th>{t.credit}</th>
                     <th className="num">{t.users}</th>
                     <th>{t.registered}</th>
                   </tr>
@@ -260,6 +264,9 @@ export function AdminCompanies({ query }: { query: Record<string, string> }) {
                       </td>
                       <td>
                         <StatusBadge kind="company" status={c.status} />
+                      </td>
+                      <td>
+                        <CreditBadge credit={c.credit} />
                       </td>
                       <td className="num">{c.memberCount}</td>
                       <td className="whitespace-nowrap">{localDate(c.createdAt)}</td>
@@ -515,6 +522,7 @@ export function AdminCompany({ id }: { id: string }) {
               </QueryView>
             </Card>
           </div>
+          <CreditPanel companyId={c.id} />
           <Card>
             <PanelTitle icon={Users}>{t.usersCount(members.length)}</PanelTitle>
             {members.length ? (

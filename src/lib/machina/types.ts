@@ -715,7 +715,55 @@ export type AdminCompany = {
   reviewedAt: string | null
   rejectionReason: string | null
 }
-export type AdminCompanyListItem = AdminCompany & { memberCount: number }
+export type AdminCompanyListItem = AdminCompany & {
+  memberCount: number
+  credit: CreditSummary | null
+}
+
+// ------------------------------------------------------------ credit scoring
+export type CreditLevel = "advanced" | "top"
+export type CreditCheckStatus = "pending" | "completed" | "not_found" | "failed"
+
+/** Monthly series of a "top" report. Scores and descriptions are the bureau's own (Italian). */
+export type CreditHistory = {
+  riskScore: { month: string; score: string; description: string | null }[]
+  rating: { month: string; rating: string; balanceYear: string | null }[]
+  creditLimit: { month: string; value: number }[]
+  note: { description: string; events: string[] } | null
+}
+
+export type CreditCheck = {
+  id: string
+  /** "openapi", or "stub" for made-up development data. */
+  provider: string
+  level: CreditLevel
+  status: CreditCheckStatus
+  /** VERDE SCURO … ROSSO SCURO, GRIGIO (not assessable). */
+  riskScore: string | null
+  riskDescription: string | null
+  /** A1 (best) … C3 (worst), ND (not rated). */
+  rating: string | null
+  /** 1 (low risk) … 990 (high risk). */
+  riskSeverity: number | null
+  /** Estimated credit limit in euros. */
+  creditLimit: number | null
+  history: CreditHistory | null
+  error: string | null
+  createdAt: string
+  completedAt: string | null
+  requestedBy: { id: string; name: string } | null
+}
+
+export type CreditSummary = Pick<
+  CreditCheck,
+  "status" | "riskScore" | "rating" | "level" | "provider" | "createdAt"
+>
+
+export type CreditChecksResponse = {
+  enabled: boolean
+  provider: string | null
+  items: CreditCheck[]
+}
 
 export type AdminUser = {
   id: string
