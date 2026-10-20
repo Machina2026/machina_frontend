@@ -1,7 +1,12 @@
+"use client"
+
 import Image from "next/image"
 
 import { photoUrl } from "@/lib/machina/api"
-import { num } from "@/lib/machina/format"
+import { useCatalogText } from "@/i18n/catalog"
+import { useFormat, useMessages } from "@/i18n/client"
+import { useCommon } from "@/i18n/common"
+import { defineMessages } from "@/i18n/messages"
 import type { PublicModel } from "@/lib/machina/types"
 import { cn } from "@/lib/utils"
 
@@ -88,11 +93,16 @@ export function MachinePhoto({
   )
 }
 
+const M = defineMessages({
+  en: { machinePhoto: "Machine photo", partnerPhoto: "Partner's photo" },
+  it: { machinePhoto: "Foto della macchina", partnerPhoto: "Foto del noleggiatore" },
+})
+
 /** Category photo (or the partner's photo), always labelled as such. */
 export function ModelImage({
   src,
   alt,
-  note = "Illustrative photo",
+  note,
   sizes = "(min-width: 1024px) 420px, 100vw",
   className,
 }: {
@@ -102,6 +112,7 @@ export function ModelImage({
   sizes?: string
   className?: string
 }) {
+  const c = useCommon()
   return (
     <div
       className={cn(
@@ -111,7 +122,7 @@ export function ModelImage({
     >
       <MachinePhoto src={src} alt={alt} sizes={sizes} />
       <span className="text-muted-foreground absolute right-1.5 bottom-1.5 rounded bg-white/85 px-1.5 text-[0.7rem]">
-        {note}
+        {note ?? c.illustrativePhoto}
       </span>
     </div>
   )
@@ -126,12 +137,13 @@ export function PhotoOrImage({
   model: PublicModel
   className?: string
 }) {
+  const t = useMessages(M)
   if (photos?.length)
     return (
       <ModelImage
         src={photoUrl(photos[0])}
-        alt="Machine photo"
-        note="Partner's photo"
+        alt={t.machinePhoto}
+        note={t.partnerPhoto}
         className={className}
       />
     )
@@ -141,6 +153,8 @@ export function PhotoOrImage({
 }
 
 export function SpecChips({ model, max = 4 }: { model: PublicModel; max?: number }) {
+  const ct = useCatalogText()
+  const { num } = useFormat()
   return (
     <div className="my-2 flex flex-wrap gap-1.5">
       {model.specList.slice(0, max).map((s) => (
@@ -148,7 +162,7 @@ export function SpecChips({ model, max = 4 }: { model: PublicModel; max?: number
           key={s.key}
           className="bg-muted text-muted-foreground rounded-md border px-2 py-0.5 text-[0.8rem]"
         >
-          {s.label}:{" "}
+          {ct.spec(s.label)}:{" "}
           <b className="text-foreground">
             {typeof s.value === "number" ? num(s.value) : s.value}
             {s.unit && ` ${s.unit}`}

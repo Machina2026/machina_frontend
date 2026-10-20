@@ -1,8 +1,7 @@
-import type { Metadata } from "next"
-
 import { RequestDraftView } from "@/features/public/request-draft"
+import { pageMetadata } from "@/i18n/server"
 
-export const metadata: Metadata = { title: "Request" }
+export const generateMetadata = pageMetadata("request")
 
 export default function RequestPage() {
   return <RequestDraftView />

@@ -8,19 +8,48 @@ import { QueryView } from "@/components/app/query-view"
 import { EmptyState } from "@/components/states/empty-state"
 import { Card } from "@/components/ui/card"
 import { Select } from "@/components/ui/select"
+import { useMessages } from "@/i18n/client"
+import { defineMessages } from "@/i18n/messages"
 import { api, qs } from "@/lib/machina/api"
 import type { AuditEntry, Paged } from "@/lib/machina/types"
 
 import { AuditList, Pager, pageOf, useUrlFilters } from "./shared"
 
-const TARGET_OPTIONS = [
-  ["", "Everything"],
-  ["company", "Companies"],
-  ["user", "Users"],
-  ["invitation", "Invitations"],
-] as const
+const M = defineMessages({
+  en: {
+    title: "Activity log",
+    intro:
+      "Registrations, approvals, suspensions, invitations, team and machine changes, newest first.",
+    show: "Show",
+    targets: {
+      "": "Everything",
+      company: "Companies",
+      user: "Users",
+      invitation: "Invitations",
+      offer: "Machines",
+    },
+    noActivity: "No activity yet.",
+  },
+  it: {
+    title: "Registro attività",
+    intro:
+      "Registrazioni, approvazioni, sospensioni, inviti, modifiche ai team e alle macchine, dai più recenti.",
+    show: "Mostra",
+    targets: {
+      "": "Tutto",
+      company: "Aziende",
+      user: "Utenti",
+      invitation: "Inviti",
+      offer: "Macchine",
+    },
+    noActivity: "Ancora nessuna attività.",
+  },
+})
+
+const TARGETS = ["", "company", "user", "invitation", "offer"] as const
 
 export function AdminAudit({ query }: { query: Record<string, string> }) {
+  const t = useMessages(M)
   const setFilters = useUrlFilters("/admin/audit", query)
   const params = { targetType: query.targetType ?? "", page: pageOf(query), pageSize: 50 }
   const log = useQuery({
@@ -29,13 +58,11 @@ export function AdminAudit({ query }: { query: Record<string, string> }) {
   })
   return (
     <>
-      <PageHead title="Activity log">
-        Registrations, approvals, suspensions, invitations and team changes, newest first.
-      </PageHead>
+      <PageHead title={t.title}>{t.intro}</PageHead>
       <Select
-        aria-label="Show"
+        aria-label={t.show}
         className="mb-4 w-auto"
-        options={TARGET_OPTIONS}
+        options={TARGETS.map((x) => [x, t.targets[x]] as const)}
         value={params.targetType}
         onChange={(e) => setFilters({ targetType: e.target.value })}
       />
@@ -49,7 +76,7 @@ export function AdminAudit({ query }: { query: Record<string, string> }) {
               <Pager {...r} onPage={(page) => setFilters({ page: String(page) })} />
             </>
           ) : (
-            <EmptyState icon={History} title="No activity yet." />
+            <EmptyState icon={History} title={t.noActivity} />
           )
         }
       </QueryView>

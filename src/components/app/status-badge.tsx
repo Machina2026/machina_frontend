@@ -1,15 +1,7 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
-import {
-  CHANGE_STATUS,
-  CHARGE_STATUS,
-  COMPANY_STATUS,
-  ORDER_STATUS,
-  PAYMENT_STATUS,
-  QUOTE_SENT_FOR_PARTNER,
-  QUOTE_STATUS,
-  REQUEST_STATUS,
-  USER_STATUS,
-} from "@/lib/machina/labels"
+import { useLabels } from "@/lib/machina/labels"
 import type {
   ChangeStatus,
   ChargeStatus,
@@ -31,27 +23,27 @@ type Props =
   | { kind: "company"; status: CompanyStatus }
   | { kind: "user"; status: UserStatus }
 
-const TABLES = {
-  quote: QUOTE_STATUS,
-  order: ORDER_STATUS,
-  payment: PAYMENT_STATUS,
-  change: CHANGE_STATUS,
-  charge: CHARGE_STATUS,
-  request: REQUEST_STATUS,
-  company: COMPANY_STATUS,
-  user: USER_STATUS,
-}
-
 export function StatusBadge(props: Props) {
+  const L = useLabels()
+  const tables = {
+    quote: L.QUOTE_STATUS,
+    order: L.ORDER_STATUS,
+    payment: L.PAYMENT_STATUS,
+    change: L.CHANGE_STATUS,
+    charge: L.CHARGE_STATUS,
+    request: L.REQUEST_STATUS,
+    company: L.COMPANY_STATUS,
+    user: L.USER_STATUS,
+  }
   const entry = (
-    TABLES[props.kind] as Record<
+    tables[props.kind] as Record<
       string,
       { label: string; tone: Parameters<typeof Badge>[0]["tone"] }
     >
   )[props.status]
   const label =
     props.kind === "quote" && props.forPartner && props.status === "sent"
-      ? QUOTE_SENT_FOR_PARTNER
+      ? L.QUOTE_SENT_FOR_PARTNER
       : entry.label
   return <Badge tone={entry.tone}>{label}</Badge>
 }

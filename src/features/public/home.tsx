@@ -27,7 +27,11 @@ import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { api, qs } from "@/lib/machina/api"
-import { addDays, eurWhole, today } from "@/lib/machina/format"
+import { useCatalogText } from "@/i18n/catalog"
+import { useFormat, useMessages } from "@/i18n/client"
+import { useCommon } from "@/i18n/common"
+import { defineMessages, plural } from "@/i18n/messages"
+import { addDays, today } from "@/lib/machina/format"
 import { useMeta } from "@/lib/machina/hooks"
 import type { CatalogResponse } from "@/lib/machina/types"
 import { cn } from "@/lib/utils"
@@ -35,72 +39,213 @@ import { cn } from "@/lib/utils"
 /** Text handed from another page to the assistant's first message. */
 export const ASSISTANT_SEED_KEY = "machina.assistantSeed"
 
-const PROMISES = [
-  "Several rental companies, one request",
-  "Published rates, compared like for like",
-  "Price locked when you accept",
-]
+const WHY_ICONS = [Scale, Wand2, Lock, MapPin]
+const PARTNER_ICONS = [CalendarRange, BadgeCheck, FileCheck2]
 
-const WHY = [
-  {
-    icon: Scale,
-    title: "Like-for-like comparison",
-    body: "Transport, operator, accessories and minimum rental side by side, so the cheapest day rate isn't a surprise later.",
+const M = defineMessages({
+  en: {
+    heroTitle: "Rent the equipment you need, when you need it",
+    heroIntro:
+      "Compare construction equipment from rental companies across Turin and Piedmont, and book it with one request.",
+    equipment: "Equipment",
+    allEquipment: "All equipment",
+    province: "Site province",
+    allPiedmont: "All of Piedmont",
+    fromDate: "From",
+    toDate: "To",
+    notSure: "Not sure what you need? Describe your job",
+    promises: [
+      "Several rental companies, one request",
+      "Published rates, compared like for like",
+      "Price locked when you accept",
+    ],
+    browseTitle: "Browse by category",
+    browseIntro: "Every category, with the lowest daily rate across all rental companies.",
+    viewAll: "View all equipment",
+    models: (n: number) => `${n} ${plural(n, "model", "models")}`,
+    noOffers: "No offers yet",
+    popularTitle: "Machines with the most offers",
+    popularIntro: "More rental companies means more choice on price and conditions.",
+    lowestFirst: "Lowest prices first",
+    howTitle: "How renting works",
+    startSearch: "Start your search",
+    steps: [
+      {
+        title: "Find your machine",
+        body: "Search by category and dates, or describe the job and let the assistant suggest machines.",
+      },
+      {
+        title: "Compare and request",
+        body: "See what each offer includes, then send one request. Each rental company confirms its own lines.",
+      },
+      {
+        title: "Accept and get to work",
+        body: "Accept the final quote, then follow the order, extensions, charges and documents in one place.",
+      },
+    ],
+    whyTitle: "Why contractors choose Machina",
+    whyIntro:
+      "One place to find machines, compare real conditions and keep every quote, order and document for all your sites.",
+    why: [
+      {
+        title: "Like-for-like comparison",
+        body: "Transport, operator, accessories and minimum rental side by side, so the cheapest day rate isn't a surprise later.",
+      },
+      {
+        title: "Help choosing the machine",
+        body: "Describe the job in plain words. The assistant asks the right questions and suggests machines that fit your site.",
+      },
+      {
+        title: "Prices that don't move",
+        body: "Once you accept a quote the price is locked. Extensions and extra charges always need your approval.",
+      },
+      {
+        title: "Local rental companies",
+        body: "Depots across Turin and Piedmont, with the provinces each company delivers to shown on every offer.",
+      },
+    ],
+    statModels: "machine models",
+    statOffers: "offers to compare",
+    statPartners: "rental companies",
+    statProvinces: "provinces served",
+    partnerKicker: "For rental companies",
+    partnerTitle: "List your equipment on Machina",
+    partnerIntro:
+      "Publish your machines, receive structured requests with site, period and needs, and manage quotes and orders without the back-and-forth.",
+    partnerPoints: [
+      "Requests arrive complete: site, dates and needs",
+      "You confirm availability and price, line by line",
+      "Changes, charges and documents tracked for you",
+    ],
+    becomePartner: "Become a partner",
+    faqTitle: "Frequently asked questions",
+    faqIntro: "How prices, requests and rental companies work on Machina.",
+    browseCatalog: "Browse the catalogue",
+    faq: [
+      {
+        q: "Are the prices on the catalogue final?",
+        a: "They are the rates each rental company publishes, excluding VAT. When you send a request, the company confirms availability and the final price; once you accept the quote, that price is locked.",
+      },
+      {
+        q: "Do I need an account to search?",
+        a: "No. You can browse, compare and build a request without signing in. You need a customer account to send the request and follow quotes and orders.",
+      },
+      {
+        q: "Can I rent a machine with an operator?",
+        a: "Many offers include an operator on request, and some machines (like mobile cranes) are always rented with one. Use the “Available with an operator” filter in the catalogue.",
+      },
+      {
+        q: "Is transport to the site included?",
+        a: "Each offer says whether transport has a fixed price, is quoted separately or isn't available. The comparison shows it as its own line, so you see the full cost.",
+      },
+      {
+        q: "Who are the rental companies?",
+        a: "Local rental companies with depots in Piedmont. Each one is reviewed and approved by Machina before its machines appear in the catalogue.",
+      },
+    ],
   },
-  {
-    icon: Wand2,
-    title: "Help choosing the machine",
-    body: "Describe the job in plain words. The assistant asks the right questions and suggests machines that fit your site.",
+  it: {
+    heroTitle: "Le macchine che ti servono, quando ti servono",
+    heroIntro:
+      "Confronta le macchine edili dei noleggiatori di Torino e del Piemonte e prenotale con una sola richiesta.",
+    equipment: "Macchina",
+    allEquipment: "Tutte le macchine",
+    province: "Provincia del cantiere",
+    allPiedmont: "Tutto il Piemonte",
+    fromDate: "Dal",
+    toDate: "Al",
+    notSure: "Non sai quale macchina ti serve? Descrivi il lavoro",
+    promises: [
+      "Più noleggiatori, una sola richiesta",
+      "Tariffe pubblicate, confrontate alla pari",
+      "Prezzo bloccato quando accetti",
+    ],
+    browseTitle: "Cerca per categoria",
+    browseIntro: "Tutte le categorie, con la tariffa giornaliera più bassa tra i noleggiatori.",
+    viewAll: "Vedi tutte le macchine",
+    models: (n: number) => `${n} ${plural(n, "modello", "modelli")}`,
+    noOffers: "Nessuna offerta per ora",
+    popularTitle: "Le macchine con più offerte",
+    popularIntro: "Più noleggiatori significa più scelta su prezzo e condizioni.",
+    lowestFirst: "Prima i prezzi più bassi",
+    howTitle: "Come funziona il noleggio",
+    startSearch: "Inizia la ricerca",
+    steps: [
+      {
+        title: "Trova la macchina",
+        body: "Cerca per categoria e date, oppure descrivi il lavoro e lascia che l'assistente ti suggerisca le macchine.",
+      },
+      {
+        title: "Confronta e richiedi",
+        body: "Guarda cosa include ogni offerta, poi invia una sola richiesta. Ogni noleggiatore conferma le proprie righe.",
+      },
+      {
+        title: "Accetta e inizia a lavorare",
+        body: "Accetta il preventivo finale, poi segui ordine, proroghe, addebiti e documenti in un unico posto.",
+      },
+    ],
+    whyTitle: "Perché le imprese scelgono Machina",
+    whyIntro:
+      "Un unico posto per trovare le macchine, confrontare le condizioni reali e tenere ogni preventivo, ordine e documento di tutti i tuoi cantieri.",
+    why: [
+      {
+        title: "Confronto alla pari",
+        body: "Trasporto, operatore, accessori e noleggio minimo uno accanto all'altro, così la tariffa giornaliera più bassa non riserva sorprese.",
+      },
+      {
+        title: "Aiuto nella scelta",
+        body: "Descrivi il lavoro con parole tue. L'assistente fa le domande giuste e suggerisce le macchine adatte al tuo cantiere.",
+      },
+      {
+        title: "Prezzi che non cambiano",
+        body: "Quando accetti un preventivo il prezzo è bloccato. Proroghe e addebiti extra richiedono sempre la tua approvazione.",
+      },
+      {
+        title: "Noleggiatori locali",
+        body: "Depositi a Torino e in tutto il Piemonte, con le province servite da ogni noleggiatore indicate su ogni offerta.",
+      },
+    ],
+    statModels: "modelli di macchine",
+    statOffers: "offerte da confrontare",
+    statPartners: "noleggiatori",
+    statProvinces: "province servite",
+    partnerKicker: "Per i noleggiatori",
+    partnerTitle: "Pubblica le tue macchine su Machina",
+    partnerIntro:
+      "Pubblica le tue macchine, ricevi richieste strutturate con cantiere, periodo ed esigenze, e gestisci preventivi e ordini senza continui scambi.",
+    partnerPoints: [
+      "Le richieste arrivano complete: cantiere, date ed esigenze",
+      "Confermi disponibilità e prezzo, riga per riga",
+      "Modifiche, addebiti e documenti tracciati per te",
+    ],
+    becomePartner: "Diventa partner",
+    faqTitle: "Domande frequenti",
+    faqIntro: "Come funzionano prezzi, richieste e noleggiatori su Machina.",
+    browseCatalog: "Sfoglia il catalogo",
+    faq: [
+      {
+        q: "I prezzi del catalogo sono definitivi?",
+        a: "Sono le tariffe pubblicate da ogni noleggiatore, IVA esclusa. Quando invii una richiesta, il noleggiatore conferma disponibilità e prezzo finale; quando accetti il preventivo, quel prezzo è bloccato.",
+      },
+      {
+        q: "Serve un account per cercare?",
+        a: "No. Puoi sfogliare, confrontare e preparare una richiesta senza accedere. Ti serve un account cliente per inviare la richiesta e seguire preventivi e ordini.",
+      },
+      {
+        q: "Posso noleggiare una macchina con l'operatore?",
+        a: "Molte offerte includono l'operatore su richiesta, e alcune macchine (come le autogru) si noleggiano sempre con l'operatore. Usa il filtro “Disponibile con operatore” nel catalogo.",
+      },
+      {
+        q: "Il trasporto in cantiere è incluso?",
+        a: "Ogni offerta indica se il trasporto ha un prezzo fisso, è su preventivo o non è disponibile. Il confronto lo mostra come voce separata, così vedi il costo completo.",
+      },
+      {
+        q: "Chi sono i noleggiatori?",
+        a: "Aziende di noleggio locali con deposito in Piemonte. Ognuna viene verificata e approvata da Machina prima che le sue macchine compaiano nel catalogo.",
+      },
+    ],
   },
-  {
-    icon: Lock,
-    title: "Prices that don't move",
-    body: "Once you accept a quote the price is locked. Extensions and extra charges always need your approval.",
-  },
-  {
-    icon: MapPin,
-    title: "Local rental companies",
-    body: "Depots across Turin and Piedmont, with the provinces each company delivers to shown on every offer.",
-  },
-]
-
-const STEPS = [
-  {
-    title: "Find your machine",
-    body: "Search by category and dates, or describe the job and let the assistant suggest machines.",
-  },
-  {
-    title: "Compare and request",
-    body: "See what each offer includes, then send one request. Each rental company confirms its own lines.",
-  },
-  {
-    title: "Accept and get to work",
-    body: "Accept the final quote, then follow the order, extensions, charges and documents in one place.",
-  },
-]
-
-const FAQ = [
-  {
-    q: "Are the prices on the catalogue final?",
-    a: "They are the rates each rental company publishes, excluding VAT. When you send a request, the company confirms availability and the final price; once you accept the quote, that price is locked.",
-  },
-  {
-    q: "Do I need an account to search?",
-    a: "No. You can browse, compare and build a request without signing in. You need a customer account to send the request and follow quotes and orders.",
-  },
-  {
-    q: "Can I rent a machine with an operator?",
-    a: "Many offers include an operator on request, and some machines (like mobile cranes) are always rented with one. Use the “Available with an operator” filter in the catalogue.",
-  },
-  {
-    q: "Is transport to the site included?",
-    a: "Each offer says whether transport has a fixed price, is quoted separately or isn't available. The comparison shows it as its own line, so you see the full cost.",
-  },
-  {
-    q: "Who are the rental companies?",
-    a: "Local rental companies with depots in Piedmont. Each one is reviewed and approved by Machina before its machines appear in the catalogue.",
-  },
-]
+})
 
 /** A full-width band; its content sits on the site's container. */
 function Section({
@@ -149,6 +294,10 @@ function SectionHead({
 
 export function HomeView() {
   const router = useRouter()
+  const t = useMessages(M)
+  const c = useCommon()
+  const ct = useCatalogText()
+  const { eurWhole } = useFormat()
   const meta = useMeta().data
   const catalog = useQuery({
     queryKey: ["catalog", {}],
@@ -192,11 +341,10 @@ export function HomeView() {
         />
         <Container className="relative py-20 sm:py-28">
           <h1 className="mb-5 max-w-[760px] text-[2.6rem] leading-[1.04] text-white sm:text-[4rem]">
-            Rent the equipment you need, when you need it
+            {t.heroTitle}
           </h1>
           <p className="mb-10 max-w-[580px] text-[1.12rem] text-white/80 sm:text-[1.25rem]">
-            Compare construction equipment from rental companies across Turin and Piedmont, and book
-            it with one request.
+            {t.heroIntro}
           </p>
 
           <form
@@ -207,31 +355,33 @@ export function HomeView() {
             className="grid max-w-[1060px] gap-2 rounded-2xl bg-white p-2 shadow-[0_30px_60px_-20px_rgb(0_0_0/0.55)] sm:grid-cols-2 lg:grid-cols-[1.4fr_1.1fr_1fr_1fr_auto]"
           >
             <label className="block">
-              <span className="sr-only">Equipment</span>
+              <span className="sr-only">{t.equipment}</span>
               <Select
                 value={search.cat}
                 onChange={(e) => setSearch({ ...search, cat: e.target.value })}
                 className="bg-secondary hover:border-border-strong min-h-13 border-transparent"
                 options={[
-                  ["", "All equipment"],
-                  ...(meta?.categories ?? []).map((c) => [c.id, c.name] as const),
+                  ["", t.allEquipment],
+                  ...(meta?.categories ?? []).map(
+                    (x) => [x.id, ct.category(x.id, x.name)] as const
+                  ),
                 ]}
               />
             </label>
             <label className="block">
-              <span className="sr-only">Site province</span>
+              <span className="sr-only">{t.province}</span>
               <Select
                 value={search.prov}
                 onChange={(e) => setSearch({ ...search, prov: e.target.value })}
                 className="bg-secondary hover:border-border-strong min-h-13 border-transparent"
                 options={[
-                  ["", "All of Piedmont"],
-                  ...(meta?.provinces ?? []).map((p) => [p.id, p.name] as const),
+                  ["", t.allPiedmont],
+                  ...(meta?.provinces ?? []).map((p) => [p.id, ct.province(p.id, p.name)] as const),
                 ]}
               />
             </label>
             <label className="block">
-              <span className="sr-only">From</span>
+              <span className="sr-only">{t.fromDate}</span>
               <Input
                 type="date"
                 value={search.from}
@@ -240,7 +390,7 @@ export function HomeView() {
               />
             </label>
             <label className="block">
-              <span className="sr-only">To</span>
+              <span className="sr-only">{t.toDate}</span>
               <Input
                 type="date"
                 value={search.to}
@@ -253,7 +403,7 @@ export function HomeView() {
               variant="primary"
               className="min-h-13 px-8 text-[1.02rem] sm:col-span-2 lg:col-span-1"
             >
-              <Search aria-hidden /> Search
+              <Search aria-hidden /> {c.search}
             </Button>
           </form>
 
@@ -262,13 +412,13 @@ export function HomeView() {
             className="mt-5 inline-flex items-center gap-2 font-semibold text-white decoration-white/40 hover:text-white hover:decoration-white"
           >
             <Sparkles aria-hidden className="text-primary size-4" />
-            Not sure what you need? Describe your job
+            {t.notSure}
           </Link>
           <ul className="mt-10 flex list-none flex-wrap gap-x-8 gap-y-2 p-0">
-            {PROMISES.map((t) => (
-              <li key={t} className="flex items-center gap-2 text-[0.95rem] text-white/85">
+            {t.promises.map((p) => (
+              <li key={p} className="flex items-center gap-2 text-[0.95rem] text-white/85">
                 <Check aria-hidden className="text-primary size-4" />
-                {t}
+                {p}
               </li>
             ))}
           </ul>
@@ -276,36 +426,35 @@ export function HomeView() {
       </section>
 
       <Section>
-        <SectionHead
-          title="Browse by category"
-          intro="Every category, with the lowest daily rate across all rental companies."
-          link={["/catalog", "View all equipment"]}
-        />
+        <SectionHead title={t.browseTitle} intro={t.browseIntro} link={["/catalog", t.viewAll]} />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {meta
-            ? meta.categories.map((c) => {
-                const info = stats?.byCat.get(c.id)
+            ? meta.categories.map((cat) => {
+                const info = stats?.byCat.get(cat.id)
                 return (
                   <Link
-                    key={c.id}
-                    href={`/catalog?cat=${c.id}`}
+                    key={cat.id}
+                    href={`/catalog?cat=${cat.id}`}
                     className="group border-border bg-card text-foreground lift flex items-center gap-4 rounded-xl border p-3 no-underline hover:no-underline"
                   >
                     <div className="bg-muted relative size-[76px] shrink-0 overflow-hidden rounded-lg">
-                      <MachinePhoto src={c.image} alt="" sizes="76px" />
+                      <MachinePhoto src={cat.image} alt="" sizes="76px" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <b className="block leading-snug font-semibold">{c.name}</b>
+                      <b className="block leading-snug font-semibold">
+                        {ct.category(cat.id, cat.name)}
+                      </b>
                       <div className="text-muted-foreground mt-1 h-5 text-[0.88rem]">
                         {!stats ? (
                           <Skeleton className="mt-1 h-3.5 w-32" />
                         ) : info ? (
                           <>
-                            {info.count} model{info.count === 1 ? "" : "s"} · from{" "}
-                            <b className="text-foreground">{eurWhole(info.from)}</b>/day
+                            {t.models(info.count)} · {c.from}{" "}
+                            <b className="text-foreground">{eurWhole(info.from)}</b>
+                            {c.perDay}
                           </>
                         ) : (
-                          "No offers yet"
+                          t.noOffers
                         )}
                       </div>
                     </div>
@@ -335,9 +484,9 @@ export function HomeView() {
       {(!stats || stats.featured.length > 0) && (
         <Section muted>
           <SectionHead
-            title="Machines with the most offers"
-            intro="More rental companies means more choice on price and conditions."
-            link={["/catalog?sort=price", "Lowest prices first"]}
+            title={t.popularTitle}
+            intro={t.popularIntro}
+            link={["/catalog?sort=price", t.lowestFirst]}
           />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {stats
@@ -352,18 +501,16 @@ export function HomeView() {
                 ))
               : Array.from({ length: 4 }, (_, i) => <ModelCardSkeleton key={i} />)}
           </div>
-          <p className="text-muted-foreground mt-5 mb-0 text-[0.85rem]">
-            Prices excluding VAT. Availability is always confirmed by the rental company.
-          </p>
+          <p className="text-muted-foreground mt-5 mb-0 text-[0.85rem]">{c.pricesExclVat}</p>
         </Section>
       )}
 
       <Section>
-        <SectionHead title="How renting works" link={["/catalog", "Start your search"]} />
+        <SectionHead title={t.howTitle} link={["/catalog", t.startSearch]} />
         <ol className="m-0 grid list-none gap-10 p-0 md:grid-cols-3 md:gap-8">
-          {STEPS.map(({ title, body }, i) => (
+          {t.steps.map(({ title, body }, i) => (
             <li key={title} className="relative">
-              {i < STEPS.length - 1 && (
+              {i < t.steps.length - 1 && (
                 <span
                   aria-hidden
                   className="bg-border absolute top-6 left-16 hidden h-px w-[calc(100%-3rem)] md:block"
@@ -380,29 +527,29 @@ export function HomeView() {
       </Section>
 
       <Section muted>
-        <SectionHead
-          title="Why contractors choose Machina"
-          intro="One place to find machines, compare real conditions and keep every quote, order and document for all your sites."
-        />
+        <SectionHead title={t.whyTitle} intro={t.whyIntro} />
         <div className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-          {WHY.map(({ icon: Icon, title, body }) => (
-            <div key={title}>
-              <span className="bg-ink text-primary inline-flex size-12 items-center justify-center rounded-xl">
-                <Icon aria-hidden className="size-5" />
-              </span>
-              <h3 className="mt-5 mb-2">{title}</h3>
-              <p className="text-muted-foreground m-0 text-[0.96rem] leading-relaxed">{body}</p>
-            </div>
-          ))}
+          {t.why.map(({ title, body }, i) => {
+            const Icon = WHY_ICONS[i]
+            return (
+              <div key={title}>
+                <span className="bg-ink text-primary inline-flex size-12 items-center justify-center rounded-xl">
+                  <Icon aria-hidden className="size-5" />
+                </span>
+                <h3 className="mt-5 mb-2">{title}</h3>
+                <p className="text-muted-foreground m-0 text-[0.96rem] leading-relaxed">{body}</p>
+              </div>
+            )
+          })}
         </div>
         {/* Live figures; gap-px over the border colour draws the dividers. */}
         <dl className="border-border bg-border mt-14 mb-0 grid grid-cols-2 gap-px overflow-hidden rounded-xl border sm:grid-cols-4">
           {(
             [
-              [stats?.models, "machine models"],
-              [stats?.offers, "offers to compare"],
-              [stats?.partners, "rental companies"],
-              [meta?.provinces.length, "provinces served"],
+              [stats?.models, t.statModels],
+              [stats?.offers, t.statOffers],
+              [stats?.partners, t.statPartners],
+              [meta?.provinces.length, t.statProvinces],
             ] as const
           ).map(([n, label]) => (
             <div key={label} className="bg-card flex flex-col-reverse gap-1.5 px-6 py-6">
@@ -419,31 +566,25 @@ export function HomeView() {
         {/* For rental companies: the page's one yellow block. */}
         <div className="bg-primary grid overflow-hidden rounded-2xl lg:grid-cols-2">
           <div className="p-8 sm:p-12">
-            <p className="mb-2 text-[0.95rem] font-semibold">For rental companies</p>
-            <h2 className="mb-4 text-[2rem] sm:text-[2.4rem]">List your equipment on Machina</h2>
-            <p className="mb-6 max-w-md text-black/75">
-              Publish your machines, receive structured requests with site, period and needs, and
-              manage quotes and orders without the back-and-forth.
-            </p>
+            <p className="mb-2 text-[0.95rem] font-semibold">{t.partnerKicker}</p>
+            <h2 className="mb-4 text-[2rem] sm:text-[2.4rem]">{t.partnerTitle}</h2>
+            <p className="mb-6 max-w-md text-black/75">{t.partnerIntro}</p>
             <ul className="mb-8 grid list-none gap-3 p-0">
-              {(
-                [
-                  [CalendarRange, "Requests arrive complete: site, dates and needs"],
-                  [BadgeCheck, "You confirm availability and price, line by line"],
-                  [FileCheck2, "Changes, charges and documents tracked for you"],
-                ] as const
-              ).map(([Icon, t]) => (
-                <li key={t} className="flex items-center gap-3 font-medium">
-                  <Icon aria-hidden className="size-5 shrink-0" />
-                  {t}
-                </li>
-              ))}
+              {t.partnerPoints.map((point, i) => {
+                const Icon = PARTNER_ICONS[i]
+                return (
+                  <li key={point} className="flex items-center gap-3 font-medium">
+                    <Icon aria-hidden className="size-5 shrink-0" />
+                    {point}
+                  </li>
+                )
+              })}
             </ul>
             <Link
               href="/become-a-partner"
               className={buttonVariants({ variant: "dark", size: "lg" })}
             >
-              Become a partner <ArrowRight aria-hidden />
+              {t.becomePartner} <ArrowRight aria-hidden />
             </Link>
           </div>
           <div className="relative min-h-[280px] lg:m-3 lg:overflow-hidden lg:rounded-xl">
@@ -459,16 +600,14 @@ export function HomeView() {
       <Section className="pt-0 sm:pt-0">
         <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr] lg:gap-16">
           <div>
-            <h2 className="mb-3 text-[2rem] sm:text-[2.4rem]">Frequently asked questions</h2>
-            <p className="text-muted-foreground mb-6 text-[1.05rem]">
-              How prices, requests and rental companies work on Machina.
-            </p>
+            <h2 className="mb-3 text-[2rem] sm:text-[2.4rem]">{t.faqTitle}</h2>
+            <p className="text-muted-foreground mb-6 text-[1.05rem]">{t.faqIntro}</p>
             <Link href="/catalog" className={buttonVariants({ variant: "primary", size: "lg" })}>
-              Browse the catalogue <ArrowRight aria-hidden />
+              {t.browseCatalog} <ArrowRight aria-hidden />
             </Link>
           </div>
           <div className="border-border divide-border divide-y border-y">
-            {FAQ.map(({ q, a }) => (
+            {t.faq.map(({ q, a }) => (
               <details key={q} className="group">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-[1.05rem] font-semibold [&::-webkit-details-marker]:hidden">
                   {q}

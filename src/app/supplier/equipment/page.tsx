@@ -1,8 +1,7 @@
-import type { Metadata } from "next"
-
 import { EquipmentList } from "@/features/supplier/equipment"
+import { pageMetadata } from "@/i18n/server"
 
-export const metadata: Metadata = { title: "Equipment catalogue" }
+export const generateMetadata = pageMetadata("equipment")
 
 export default function Page() {
   return <EquipmentList />

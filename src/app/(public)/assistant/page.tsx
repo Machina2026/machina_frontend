@@ -1,8 +1,7 @@
-import type { Metadata } from "next"
-
 import { AssistantView } from "@/features/public/assistant"
+import { pageMetadata } from "@/i18n/server"
 
-export const metadata: Metadata = { title: "Describe your job" }
+export const generateMetadata = pageMetadata("describeJob")
 
 export default function AssistantPage() {
   return <AssistantView />

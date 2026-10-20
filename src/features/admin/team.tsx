@@ -16,7 +16,8 @@ import { Card } from "@/components/ui/card"
 import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { api, ApiError, qs } from "@/lib/machina/api"
-import { localDateTime } from "@/lib/machina/format"
+import { useFormat, useMessages } from "@/i18n/client"
+import { defineMessages } from "@/i18n/messages"
 import type { AdminUserListItem, Invitation, Paged } from "@/lib/machina/types"
 
 import { UserStatusButton } from "./companies"
@@ -24,7 +25,64 @@ import { useAdminAction } from "./shared"
 
 type Invited = { invitation: Invitation; inviteUrl: string }
 
+const M = defineMessages({
+  en: {
+    inviteAdmin: "Invite an admin",
+    email: "Email",
+    emailPh: "name@machinarent.com",
+    createInvitation: "Create invitation",
+    invitationFor: (email: string) => `Invitation for ${email}`,
+    noEmails: (until: string) =>
+      `Emails aren't sent yet: send this link to them yourself. It works once, until ${until}.`,
+    linkCopied: "Link copied",
+    copyFailed: "Could not copy: select the link and copy it",
+    copyLink: "Copy link",
+    revoked: "Invitation revoked",
+    pending: "Pending invitations",
+    created: "Created",
+    expires: "Expires",
+    revokeTitle: (email: string) => `Revoke the invitation for ${email}?`,
+    revokeBody: "The link stops working.",
+    revoke: "Revoke",
+    admins: "Admins",
+    adminsIntro:
+      "Machina staff who can approve companies and manage users. Every admin action is recorded in the activity log.",
+    name: "Name",
+    status: "Status",
+    lastSignIn: "Last sign-in",
+    never: "Never",
+  },
+  it: {
+    inviteAdmin: "Invita un amministratore",
+    email: "Email",
+    emailPh: "nome@machinarent.com",
+    createInvitation: "Crea l'invito",
+    invitationFor: (email: string) => `Invito per ${email}`,
+    noEmails: (until: string) =>
+      `Le email non vengono ancora inviate: manda tu questo link. Funziona una sola volta, fino al ${until}.`,
+    linkCopied: "Link copiato",
+    copyFailed: "Impossibile copiare: seleziona il link e copialo",
+    copyLink: "Copia il link",
+    revoked: "Invito revocato",
+    pending: "Inviti in sospeso",
+    created: "Creato",
+    expires: "Scade",
+    revokeTitle: (email: string) => `Revocare l'invito per ${email}?`,
+    revokeBody: "Il link smetterà di funzionare.",
+    revoke: "Revoca",
+    admins: "Amministratori",
+    adminsIntro:
+      "Lo staff Machina che può approvare le aziende e gestire gli utenti. Ogni azione degli amministratori è registrata nel registro attività.",
+    name: "Nome",
+    status: "Stato",
+    lastSignIn: "Ultimo accesso",
+    never: "Mai",
+  },
+})
+
 function InviteForm() {
+  const t = useMessages(M)
+  const { localDateTime } = useFormat()
   const qc = useQueryClient()
   const [email, setEmail] = useState("")
   const [sent, setSent] = useState<Invited | null>(null)
@@ -41,7 +99,7 @@ function InviteForm() {
 
   return (
     <Card className="mb-4">
-      <PanelTitle icon={MailPlus}>Invite an admin</PanelTitle>
+      <PanelTitle icon={MailPlus}>{t.inviteAdmin}</PanelTitle>
       <form
         className="flex flex-wrap items-start gap-2"
         onSubmit={(e) => {
@@ -51,7 +109,7 @@ function InviteForm() {
         }}
       >
         <Field
-          label="Email"
+          label={t.email}
           htmlFor="invite-email"
           error={fieldError}
           className="min-w-[260px] flex-1"
@@ -60,20 +118,19 @@ function InviteForm() {
             id="invite-email"
             type="email"
             required
-            placeholder="name@machinarent.com"
+            placeholder={t.emailPh}
             aria-invalid={!!fieldError}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
         </Field>
         <Button type="submit" variant="primary" className="mt-[1.6rem]" disabled={invite.isPending}>
-          Create invitation
+          {t.createInvitation}
         </Button>
       </form>
       {sent && (
-        <Alert tone="info" title={`Invitation for ${sent.invitation.email}`}>
-          Emails aren&apos;t sent yet: send this link to them yourself. It works once, until{" "}
-          {localDateTime(sent.invitation.expiresAt)}.
+        <Alert tone="info" title={t.invitationFor(sent.invitation.email)}>
+          {t.noEmails(localDateTime(sent.invitation.expiresAt))}
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <code className="min-w-0 flex-1 rounded-md bg-white px-2 py-1 text-[0.85rem] break-all">
               {sent.inviteUrl}
@@ -83,11 +140,11 @@ function InviteForm() {
               onClick={() =>
                 navigator.clipboard
                   .writeText(sent.inviteUrl)
-                  .then(() => toast.success("Link copied"))
-                  .catch(() => toast.error("Could not copy: select the link and copy it"))
+                  .then(() => toast.success(t.linkCopied))
+                  .catch(() => toast.error(t.copyFailed))
               }
             >
-              <Copy aria-hidden /> Copy link
+              <Copy aria-hidden /> {t.copyLink}
             </Button>
           </div>
         </Alert>
@@ -97,27 +154,26 @@ function InviteForm() {
 }
 
 function PendingInvitations() {
+  const t = useMessages(M)
+  const { localDateTime } = useFormat()
   const confirm = useConfirm()
   const list = useQuery({
     queryKey: ["admin", "invitations"],
     queryFn: () => api.get<{ items: Invitation[] }>("/api/admin/invitations"),
   })
-  const revoke = useAdminAction(
-    (id: string) => api.del(`/api/admin/invitations/${id}`),
-    "Invitation revoked"
-  )
+  const revoke = useAdminAction((id: string) => api.del(`/api/admin/invitations/${id}`), t.revoked)
   return (
     <QueryView query={list} rows={2}>
       {({ items }) =>
         items.length ? (
           <Card className="mb-4">
-            <PanelTitle icon={MailPlus}>Pending invitations</PanelTitle>
+            <PanelTitle icon={MailPlus}>{t.pending}</PanelTitle>
             <TableWrap className="shadow-none">
               <thead>
                 <tr>
-                  <th>Email</th>
-                  <th>Created</th>
-                  <th>Expires</th>
+                  <th>{t.email}</th>
+                  <th>{t.created}</th>
+                  <th>{t.expires}</th>
                   <th />
                 </tr>
               </thead>
@@ -134,15 +190,15 @@ function PendingInvitations() {
                         disabled={revoke.isPending}
                         onClick={async () => {
                           const ok = await confirm({
-                            title: `Revoke the invitation for ${i.email}?`,
-                            body: "The link stops working.",
-                            confirmLabel: "Revoke",
+                            title: t.revokeTitle(i.email),
+                            body: t.revokeBody,
+                            confirmLabel: t.revoke,
                             danger: true,
                           })
                           if (ok) revoke.mutate(i.id)
                         }}
                       >
-                        Revoke
+                        {t.revoke}
                       </Button>
                     </td>
                   </tr>
@@ -157,6 +213,8 @@ function PendingInvitations() {
 }
 
 export function AdminTeam() {
+  const t = useMessages(M)
+  const { localDateTime } = useFormat()
   const params = { role: "admin", pageSize: 100 }
   const admins = useQuery({
     queryKey: ["admin", "users", params],
@@ -164,22 +222,19 @@ export function AdminTeam() {
   })
   return (
     <>
-      <PageHead title="Admins">
-        Machina staff who can approve companies and manage users. Every admin action is recorded in
-        the activity log.
-      </PageHead>
+      <PageHead title={t.admins}>{t.adminsIntro}</PageHead>
       <InviteForm />
       <PendingInvitations />
       <Card>
-        <PanelTitle icon={ShieldCheck}>Admins</PanelTitle>
+        <PanelTitle icon={ShieldCheck}>{t.admins}</PanelTitle>
         <QueryView query={admins} rows={2}>
           {({ items }) => (
             <TableWrap className="shadow-none">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Status</th>
-                  <th>Last sign-in</th>
+                  <th>{t.name}</th>
+                  <th>{t.status}</th>
+                  <th>{t.lastSignIn}</th>
                   <th />
                 </tr>
               </thead>
@@ -194,7 +249,7 @@ export function AdminTeam() {
                       <StatusBadge kind="user" status={u.status} />
                     </td>
                     <td className="whitespace-nowrap">
-                      {u.lastLoginAt ? localDateTime(u.lastLoginAt) : "Never"}
+                      {u.lastLoginAt ? localDateTime(u.lastLoginAt) : t.never}
                     </td>
                     <td className="text-right">
                       <UserStatusButton user={u} />

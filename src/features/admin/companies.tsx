@@ -20,9 +20,12 @@ import { Modal, ModalActions } from "@/components/ui/modal"
 import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { api, qs } from "@/lib/machina/api"
-import { localDate, localDateTime } from "@/lib/machina/format"
+import { useCatalogText } from "@/i18n/catalog"
+import { useFormat, useMessages } from "@/i18n/client"
+import { useCommon } from "@/i18n/common"
+import { defineMessages } from "@/i18n/messages"
 import { useMe, useMeta } from "@/lib/machina/hooks"
-import { COMPANY_ROLE, COMPANY_TYPE } from "@/lib/machina/labels"
+import { useLabels } from "@/lib/machina/labels"
 import type {
   AdminCompanyDetail,
   AdminCompanyListItem,
@@ -35,21 +38,142 @@ import { cn } from "@/lib/utils"
 
 import { AuditList, Pager, pageOf, SearchBox, useAdminAction, useUrlFilters } from "./shared"
 
-const STATUS_TABS: { id: CompanyStatus | ""; label: string }[] = [
-  { id: "pending", label: "Awaiting approval" },
-  { id: "approved", label: "Approved" },
-  { id: "rejected", label: "Rejected" },
-  { id: "suspended", label: "Suspended" },
-  { id: "", label: "All" },
-]
+const STATUS_TABS: (CompanyStatus | "")[] = ["pending", "approved", "rejected", "suspended", ""]
+const TYPES = ["", "partner", "client"] as const
 
-const TYPE_OPTIONS = [
-  ["", "All types"],
-  ["partner", "Rental companies"],
-  ["client", "Customers"],
-] as const
+const M = defineMessages({
+  en: {
+    tabs: {
+      pending: "Awaiting approval",
+      approved: "Approved",
+      rejected: "Rejected",
+      suspended: "Suspended",
+      "": "All",
+    },
+    types: { "": "All types", partner: "Rental companies", client: "Customers" },
+    title: "Companies",
+    intro:
+      "Rental companies can only sign in once you approve them. Customers are approved when they register.",
+    companyType: "Company type",
+    searchPh: "Search by name, VAT number or email",
+    company: "Company",
+    type: "Type",
+    location: "Location",
+    status: "Status",
+    users: "Users",
+    registered: "Registered",
+    vat: (v: string) => `VAT ${v}`,
+    nothingToReview: "Nothing to review.",
+    noCompanies: "No companies found.",
+    rejectTitle: "Reject this company",
+    rejectBody: "Its users won't be able to sign in. You can still approve it later.",
+    reject: "Reject",
+    suspendTitle: "Suspend this company",
+    suspendBody: "All its users are signed out at once and can't sign in until you reactivate it.",
+    suspend: "Suspend",
+    giveReason: "Give a reason",
+    reason: "Reason",
+    reasonOptional: "Reason (optional)",
+    recorded: "Recorded in the activity log.",
+    companyUpdated: "Company updated",
+    approve: "Approve",
+    reactivate: "Reactivate",
+    userUpdated: "User updated",
+    suspendUserTitle: (name: string) => `Suspend ${name}?`,
+    suspendUserBody: "They are signed out at once and can't sign in until you reactivate them.",
+    registeredOn: (at: string) => `Registered ${at}`,
+    waitingTitle: "Waiting for your approval",
+    waitingBody:
+      "Check the VAT number and company details before approving. Its users can't sign in until you do.",
+    rejected: "Rejected",
+    details: "Company details",
+    vatNumber: "VAT number",
+    address: "Address",
+    email: "Email",
+    pec: "PEC",
+    phone: "Phone",
+    sdi: "SDI code",
+    provinces: "Provinces served",
+    plan: "Plan",
+    review: "Review and activity",
+    lastReviewed: (at: string, by: string | null) => `Last reviewed ${at}${by ? ` by ${by}` : ""}.`,
+    usersCount: (n: number) => `Users (${n})`,
+    name: "Name",
+    teamRole: "Team role",
+    lastSignIn: "Last sign-in",
+    never: "Never",
+    noUsers: "No users.",
+  },
+  it: {
+    tabs: {
+      pending: "In attesa di approvazione",
+      approved: "Approvate",
+      rejected: "Rifiutate",
+      suspended: "Sospese",
+      "": "Tutte",
+    },
+    types: { "": "Tutti i tipi", partner: "Noleggiatori", client: "Clienti" },
+    title: "Aziende",
+    intro:
+      "I noleggiatori possono accedere solo dopo la tua approvazione. I clienti sono approvati al momento della registrazione.",
+    companyType: "Tipo di azienda",
+    searchPh: "Cerca per nome, partita IVA o email",
+    company: "Azienda",
+    type: "Tipo",
+    location: "Località",
+    status: "Stato",
+    users: "Utenti",
+    registered: "Registrata",
+    vat: (v: string) => `P. IVA ${v}`,
+    nothingToReview: "Niente da valutare.",
+    noCompanies: "Nessuna azienda trovata.",
+    rejectTitle: "Rifiuta questa azienda",
+    rejectBody: "I suoi utenti non potranno accedere. Potrai comunque approvarla in seguito.",
+    reject: "Rifiuta",
+    suspendTitle: "Sospendi questa azienda",
+    suspendBody:
+      "Tutti i suoi utenti vengono disconnessi subito e non possono accedere finché non la riattivi.",
+    suspend: "Sospendi",
+    giveReason: "Indica un motivo",
+    reason: "Motivo",
+    reasonOptional: "Motivo (facoltativo)",
+    recorded: "Registrato nel registro attività.",
+    companyUpdated: "Azienda aggiornata",
+    approve: "Approva",
+    reactivate: "Riattiva",
+    userUpdated: "Utente aggiornato",
+    suspendUserTitle: (name: string) => `Sospendere ${name}?`,
+    suspendUserBody: "Viene disconnesso subito e non può accedere finché non lo riattivi.",
+    registeredOn: (at: string) => `Registrata il ${at}`,
+    waitingTitle: "In attesa della tua approvazione",
+    waitingBody:
+      "Verifica la partita IVA e i dati aziendali prima di approvare. I suoi utenti non possono accedere finché non lo fai.",
+    rejected: "Rifiutata",
+    details: "Dati aziendali",
+    vatNumber: "Partita IVA",
+    address: "Indirizzo",
+    email: "Email",
+    pec: "PEC",
+    phone: "Telefono",
+    sdi: "Codice SDI",
+    provinces: "Province servite",
+    plan: "Piano",
+    review: "Verifica e attività",
+    lastReviewed: (at: string, by: string | null) =>
+      `Ultima verifica il ${at}${by ? ` da ${by}` : ""}.`,
+    usersCount: (n: number) => `Utenti (${n})`,
+    name: "Nome",
+    teamRole: "Ruolo nel team",
+    lastSignIn: "Ultimo accesso",
+    never: "Mai",
+    noUsers: "Nessun utente.",
+  },
+})
 
 export function AdminCompanies({ query }: { query: Record<string, string> }) {
+  const t = useMessages(M)
+  const L = useLabels()
+  const { localDate } = useFormat()
   const router = useRouter()
   const setFilters = useUrlFilters("/admin/companies", query)
   const params = {
@@ -65,40 +189,37 @@ export function AdminCompanies({ query }: { query: Record<string, string> }) {
 
   return (
     <>
-      <PageHead title="Companies">
-        Rental companies can only sign in once you approve them. Customers are approved when they
-        register.
-      </PageHead>
+      <PageHead title={t.title}>{t.intro}</PageHead>
       <div className="bg-muted mb-4 inline-flex flex-wrap gap-1 rounded-xl p-1" role="tablist">
-        {STATUS_TABS.map((t) => (
+        {STATUS_TABS.map((id) => (
           <button
-            key={t.id || "all"}
+            key={id || "all"}
             type="button"
             role="tab"
-            aria-selected={params.status === t.id}
-            onClick={() => setFilters({ status: t.id })}
+            aria-selected={params.status === id}
+            onClick={() => setFilters({ status: id })}
             className={cn(
               "text-muted-foreground hover:text-foreground cursor-pointer rounded-lg px-3.5 py-2 text-[0.92rem]",
-              params.status === t.id &&
+              params.status === id &&
                 "text-foreground bg-white font-semibold shadow-[0_1px_3px_rgb(20_18_14/0.12)]"
             )}
           >
-            {t.label}
+            {t.tabs[id]}
           </button>
         ))}
       </div>
       <div className="mb-4 flex flex-wrap gap-2">
         <Select
-          aria-label="Company type"
+          aria-label={t.companyType}
           className="w-auto"
-          options={TYPE_OPTIONS}
+          options={TYPES.map((x) => [x, t.types[x]] as const)}
           value={params.type}
           onChange={(e) => setFilters({ type: e.target.value })}
         />
         <SearchBox
           key={params.q}
           value={params.q}
-          placeholder="Search by name, VAT number or email"
+          placeholder={t.searchPh}
           onSearch={(q) => setFilters({ q })}
         />
       </div>
@@ -109,12 +230,12 @@ export function AdminCompanies({ query }: { query: Record<string, string> }) {
               <TableWrap>
                 <thead>
                   <tr>
-                    <th>Company</th>
-                    <th>Type</th>
-                    <th>Location</th>
-                    <th>Status</th>
-                    <th className="num">Users</th>
-                    <th>Registered</th>
+                    <th>{t.company}</th>
+                    <th>{t.type}</th>
+                    <th>{t.location}</th>
+                    <th>{t.status}</th>
+                    <th className="num">{t.users}</th>
+                    <th>{t.registered}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -131,9 +252,9 @@ export function AdminCompanies({ query }: { query: Record<string, string> }) {
                         >
                           {c.name}
                         </Link>
-                        <Small>VAT {c.vat}</Small>
+                        <Small>{t.vat(c.vat)}</Small>
                       </td>
-                      <td>{COMPANY_TYPE[c.type]}</td>
+                      <td>{L.COMPANY_TYPE[c.type]}</td>
                       <td>
                         {c.city} ({c.province})
                       </td>
@@ -151,7 +272,7 @@ export function AdminCompanies({ query }: { query: Record<string, string> }) {
           ) : (
             <EmptyState
               icon={Building2}
-              title={params.status === "pending" ? "Nothing to review." : "No companies found."}
+              title={params.status === "pending" ? t.nothingToReview : t.noCompanies}
             />
           )
         }
@@ -163,20 +284,7 @@ export function AdminCompanies({ query }: { query: Record<string, string> }) {
 type CompanyAction = "approve" | "reject" | "suspend" | "reactivate"
 
 /** Actions that open a dialog: rejecting needs a reason, suspending can have one. */
-const REASON_DIALOG = {
-  reject: {
-    title: "Reject this company",
-    body: "Its users won't be able to sign in. You can still approve it later.",
-    confirm: "Reject",
-    required: true,
-  },
-  suspend: {
-    title: "Suspend this company",
-    body: "All its users are signed out at once and can't sign in until you reactivate it.",
-    confirm: "Suspend",
-    required: false,
-  },
-} as const
+const REASON_REQUIRED = { reject: true, suspend: false } as const
 
 function ReasonDialog({
   action,
@@ -189,9 +297,18 @@ function ReasonDialog({
   onSubmit: (reason: string) => void
   busy: boolean
 }) {
+  const t = useMessages(M)
+  const c = useCommon()
   const [reason, setReason] = useState("")
   const [error, setError] = useState("")
-  const d = action ? REASON_DIALOG[action] : null
+  const d = action
+    ? {
+        title: action === "reject" ? t.rejectTitle : t.suspendTitle,
+        body: action === "reject" ? t.rejectBody : t.suspendBody,
+        confirm: action === "reject" ? t.reject : t.suspend,
+        required: REASON_REQUIRED[action],
+      }
+    : null
   return (
     <Modal
       open={action !== null}
@@ -202,15 +319,15 @@ function ReasonDialog({
       <form
         onSubmit={(e) => {
           e.preventDefault()
-          if (d?.required && !reason.trim()) return setError("Give a reason")
+          if (d?.required && !reason.trim()) return setError(t.giveReason)
           onSubmit(reason.trim())
         }}
       >
         <Field
-          label={d?.required ? "Reason" : "Reason (optional)"}
+          label={d?.required ? t.reason : t.reasonOptional}
           htmlFor="reason"
           error={error}
-          hint="Recorded in the activity log."
+          hint={t.recorded}
         >
           <Textarea
             id="reason"
@@ -226,7 +343,7 @@ function ReasonDialog({
         </Field>
         <ModalActions>
           <Button type="button" onClick={onClose}>
-            Cancel
+            {c.cancel}
           </Button>
           <Button type="submit" variant="danger" disabled={busy}>
             {d?.confirm}
@@ -238,11 +355,12 @@ function ReasonDialog({
 }
 
 function CompanyActions({ id, status }: { id: string; status: CompanyStatus }) {
+  const t = useMessages(M)
   const [dialog, setDialog] = useState<"reject" | "suspend" | null>(null)
   const act = useAdminAction(
     ({ action, reason }: { action: CompanyAction; reason?: string }) =>
       api.post(`/api/admin/companies/${id}/${action}`, reason ? { reason } : {}),
-    "Company updated"
+    t.companyUpdated
   )
   const run = (action: CompanyAction, reason?: string) =>
     act.mutate({ action, reason }, { onSuccess: () => setDialog(null) })
@@ -251,22 +369,22 @@ function CompanyActions({ id, status }: { id: string; status: CompanyStatus }) {
     <>
       {(status === "pending" || status === "rejected") && (
         <Button variant="ok" disabled={act.isPending} onClick={() => run("approve")}>
-          Approve
+          {t.approve}
         </Button>
       )}
       {status === "pending" && (
         <Button variant="danger" disabled={act.isPending} onClick={() => setDialog("reject")}>
-          Reject
+          {t.reject}
         </Button>
       )}
       {status === "approved" && (
         <Button variant="danger" disabled={act.isPending} onClick={() => setDialog("suspend")}>
-          Suspend
+          {t.suspend}
         </Button>
       )}
       {status === "suspended" && (
         <Button variant="ok" disabled={act.isPending} onClick={() => run("reactivate")}>
-          Reactivate
+          {t.reactivate}
         </Button>
       )}
       <ReasonDialog
@@ -282,11 +400,12 @@ function CompanyActions({ id, status }: { id: string; status: CompanyStatus }) {
 
 /** Suspend or reactivate one user; not offered on yourself or on removed users. */
 export function UserStatusButton({ user }: { user: Pick<AdminUser, "id" | "name" | "status"> }) {
+  const t = useMessages(M)
   const me = useMe().data
   const confirm = useConfirm()
   const act = useAdminAction(
     (action: "suspend" | "reactivate") => api.post(`/api/admin/users/${user.id}/${action}`),
-    "User updated"
+    t.userUpdated
   )
   if (user.id === me?.user.id || user.status === "removed") return null
   return user.status === "active" ? (
@@ -296,24 +415,28 @@ export function UserStatusButton({ user }: { user: Pick<AdminUser, "id" | "name"
       disabled={act.isPending}
       onClick={async () => {
         const ok = await confirm({
-          title: `Suspend ${user.name}?`,
-          body: "They are signed out at once and can't sign in until you reactivate them.",
-          confirmLabel: "Suspend",
+          title: t.suspendUserTitle(user.name),
+          body: t.suspendUserBody,
+          confirmLabel: t.suspend,
           danger: true,
         })
         if (ok) act.mutate("suspend")
       }}
     >
-      Suspend
+      {t.suspend}
     </Button>
   ) : (
     <Button size="sm" disabled={act.isPending} onClick={() => act.mutate("reactivate")}>
-      Reactivate
+      {t.reactivate}
     </Button>
   )
 }
 
 export function AdminCompany({ id }: { id: string }) {
+  const t = useMessages(M)
+  const L = useLabels()
+  const ct = useCatalogText()
+  const { localDateTime } = useFormat()
   const meta = useMeta().data
   const detail = useQuery({
     queryKey: ["admin", "company", id],
@@ -326,7 +449,8 @@ export function AdminCompany({ id }: { id: string }) {
         `/api/admin/audit${qs({ targetType: "company", targetId: id, pageSize: 20 })}`
       ),
   })
-  const province = (pid: string) => meta?.provinces.find((p) => p.id === pid)?.name ?? pid
+  const province = (pid: string) =>
+    ct.province(pid, meta?.provinces.find((p) => p.id === pid)?.name ?? pid)
   const plan = (pid: string | null) =>
     pid ? (meta?.settings.plans.find((p) => p.id === pid)?.name ?? pid) : "—"
 
@@ -334,58 +458,56 @@ export function AdminCompany({ id }: { id: string }) {
     <QueryView query={detail}>
       {({ company: c, members }) => (
         <>
-          <Crumbs items={[["Companies", "/admin/companies"], [c.name]]} />
+          <Crumbs items={[[t.title, "/admin/companies"], [c.name]]} />
           <PageHead
             title={c.name}
-            eyebrow={COMPANY_TYPE[c.type]}
+            eyebrow={L.COMPANY_TYPE[c.type]}
             actions={<CompanyActions id={c.id} status={c.status} />}
           >
             <span className="inline-flex flex-wrap items-center gap-2">
               <StatusBadge kind="company" status={c.status} />
-              <span>Registered {localDateTime(c.createdAt)}</span>
+              <span>{t.registeredOn(localDateTime(c.createdAt))}</span>
             </span>
           </PageHead>
           {c.status === "pending" && c.type === "partner" && (
-            <Alert tone="warn" className="mb-4" title="Waiting for your approval">
-              Check the VAT number and company details before approving. Its users can&apos;t sign
-              in until you do.
+            <Alert tone="warn" className="mb-4" title={t.waitingTitle}>
+              {t.waitingBody}
             </Alert>
           )}
           {c.status === "rejected" && c.rejectionReason && (
-            <Alert tone="bad" className="mb-4" title="Rejected">
+            <Alert tone="bad" className="mb-4" title={t.rejected}>
               {c.rejectionReason}
             </Alert>
           )}
           <div className="mb-4 grid gap-4 lg:grid-cols-2">
             <Card>
-              <PanelTitle icon={Building2}>Company details</PanelTitle>
+              <PanelTitle icon={Building2}>{t.details}</PanelTitle>
               <KV
                 items={[
-                  ["VAT number", c.vat],
-                  ["Address", `${c.address}, ${c.city} (${c.province})`],
+                  [t.vatNumber, c.vat],
+                  [t.address, `${c.address}, ${c.city} (${c.province})`],
                   [
-                    "Email",
+                    t.email,
                     <a key="email" href={`mailto:${c.email}`}>
                       {c.email}
                     </a>,
                   ],
-                  ["PEC", c.pec || "—"],
-                  ["Phone", c.phone || "—"],
+                  [t.pec, c.pec || "—"],
+                  [t.phone, c.phone || "—"],
                   ...(c.type === "client"
-                    ? ([["SDI code", c.sdi || "—"]] as [string, string][])
+                    ? ([[t.sdi, c.sdi || "—"]] as [string, string][])
                     : ([
-                        ["Provinces served", c.zones.map(province).join(", ") || "—"],
-                        ["Plan", plan(c.planId)],
+                        [t.provinces, c.zones.map(province).join(", ") || "—"],
+                        [t.plan, plan(c.planId)],
                       ] as [string, string][])),
                 ]}
               />
             </Card>
             <Card>
-              <PanelTitle icon={History}>Review and activity</PanelTitle>
+              <PanelTitle icon={History}>{t.review}</PanelTitle>
               {c.reviewedAt && (
                 <Small className="mb-3">
-                  Last reviewed {localDateTime(c.reviewedAt)}
-                  {c.reviewedBy ? ` by ${c.reviewedBy.name}` : ""}.
+                  {t.lastReviewed(localDateTime(c.reviewedAt), c.reviewedBy?.name ?? null)}
                 </Small>
               )}
               <QueryView query={activity} rows={3}>
@@ -394,15 +516,15 @@ export function AdminCompany({ id }: { id: string }) {
             </Card>
           </div>
           <Card>
-            <PanelTitle icon={Users}>Users ({members.length})</PanelTitle>
+            <PanelTitle icon={Users}>{t.usersCount(members.length)}</PanelTitle>
             {members.length ? (
               <TableWrap className="shadow-none">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Team role</th>
-                    <th>Status</th>
-                    <th>Last sign-in</th>
+                    <th>{t.name}</th>
+                    <th>{t.teamRole}</th>
+                    <th>{t.status}</th>
+                    <th>{t.lastSignIn}</th>
                     <th />
                   </tr>
                 </thead>
@@ -416,12 +538,12 @@ export function AdminCompany({ id }: { id: string }) {
                           {u.phone ? ` · ${u.phone}` : ""}
                         </Small>
                       </td>
-                      <td>{u.companyRole ? COMPANY_ROLE[u.companyRole] : "—"}</td>
+                      <td>{u.companyRole ? L.COMPANY_ROLE[u.companyRole] : "—"}</td>
                       <td>
                         <StatusBadge kind="user" status={u.status} />
                       </td>
                       <td className="whitespace-nowrap">
-                        {u.lastLoginAt ? localDateTime(u.lastLoginAt) : "Never"}
+                        {u.lastLoginAt ? localDateTime(u.lastLoginAt) : t.never}
                       </td>
                       <td className="text-right">
                         <UserStatusButton user={u} />
@@ -431,7 +553,7 @@ export function AdminCompany({ id }: { id: string }) {
                 </tbody>
               </TableWrap>
             ) : (
-              <Small>No users.</Small>
+              <Small>{t.noUsers}</Small>
             )}
           </Card>
         </>

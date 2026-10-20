@@ -9,20 +9,77 @@ import { QueryView } from "@/components/app/query-view"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { useFormat, useMessages } from "@/i18n/client"
+import { defineMessages } from "@/i18n/messages"
 import { api, ApiError } from "@/lib/machina/api"
-import { localDateTime } from "@/lib/machina/format"
-import { COMPANY_ROLE, COMPANY_TYPE } from "@/lib/machina/labels"
+import { useLabels } from "@/lib/machina/labels"
 import type { AuthResponse, InvitationPreview } from "@/lib/machina/types"
 
 import { AuthBrandPanel, useAfterSignIn } from "./auth"
 
-function invitedAs(inv: InvitationPreview) {
-  if (!inv.company) return "a Machina admin"
-  const role = inv.companyRole ? COMPANY_ROLE[inv.companyRole].toLowerCase() : "member"
-  return `${role} of ${inv.company.name} (${COMPANY_TYPE[inv.company.type].toLowerCase()})`
-}
+const M = defineMessages({
+  en: {
+    admin: "a Machina admin",
+    member: "member",
+    roleOf: (role: string, company: string, type: string) => `${role} of ${company} (${type})`,
+    invited: (as: React.ReactNode, email: React.ReactNode, until: string) => (
+      <>
+        You&apos;ve been invited to join Machina Rent as {as}, with the email {email}. The
+        invitation is valid until {until}.
+      </>
+    ),
+    yourName: "Your name",
+    phone: "Phone (optional)",
+    password: "Choose a password",
+    passwordHint: "At least 8 characters.",
+    creating: "Creating your account…",
+    create: "Create account and sign in",
+    kicker: "You're invited",
+    title: (brand: React.ReactNode) => <>Join {brand}</>,
+    points: [
+      "Create your account in one step",
+      "Your email is already confirmed by the invitation",
+      "Signed in straight away",
+    ],
+    eyebrow: "Invitation",
+    heading: "Create your account",
+    askNewLink: "Ask the person who invited you for a new link.",
+    goSignIn: "Go to sign-in",
+  },
+  it: {
+    admin: "amministratore Machina",
+    member: "membro",
+    roleOf: (role: string, company: string, type: string) => `${role} di ${company} (${type})`,
+    invited: (as: React.ReactNode, email: React.ReactNode, until: string) => (
+      <>
+        Sei stato invitato su Machina Rent come {as}, con l&apos;email {email}. L&apos;invito è
+        valido fino al {until}.
+      </>
+    ),
+    yourName: "Il tuo nome",
+    phone: "Telefono (facoltativo)",
+    password: "Scegli una password",
+    passwordHint: "Almeno 8 caratteri.",
+    creating: "Creazione dell'account…",
+    create: "Crea l'account e accedi",
+    kicker: "Sei stato invitato",
+    title: (brand: React.ReactNode) => <>Entra in {brand}</>,
+    points: [
+      "Crea il tuo account in un solo passaggio",
+      "La tua email è già confermata dall'invito",
+      "Accesso immediato",
+    ],
+    eyebrow: "Invito",
+    heading: "Crea il tuo account",
+    askNewLink: "Chiedi un nuovo link a chi ti ha invitato.",
+    goSignIn: "Vai all'accesso",
+  },
+})
 
 function AcceptForm({ token, inv }: { token: string; inv: InvitationPreview }) {
+  const t = useMessages(M)
+  const L = useLabels()
+  const { localDateTime } = useFormat()
   const after = useAfterSignIn()
   const [form, setForm] = useState({ name: "", phone: "", password: "" })
   const accept = useMutation({
@@ -33,6 +90,14 @@ function AcceptForm({ token, inv }: { token: string; inv: InvitationPreview }) {
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [k]: e.target.value })
 
+  const invitedAs = !inv.company
+    ? t.admin
+    : t.roleOf(
+        inv.companyRole ? L.COMPANY_ROLE[inv.companyRole].toLowerCase() : t.member,
+        inv.company.name,
+        L.COMPANY_TYPE[inv.company.type].toLowerCase()
+      )
+
   return (
     <form
       onSubmit={(e) => {
@@ -41,10 +106,9 @@ function AcceptForm({ token, inv }: { token: string; inv: InvitationPreview }) {
       }}
     >
       <p className="text-muted-foreground mb-6">
-        You&apos;ve been invited to join Machina Rent as <b>{invitedAs(inv)}</b>, with the email{" "}
-        <b>{inv.email}</b>. The invitation is valid until {localDateTime(inv.expiresAt)}.
+        {t.invited(<b>{invitedAs}</b>, <b>{inv.email}</b>, localDateTime(inv.expiresAt))}
       </p>
-      <Field label="Your name" htmlFor="i-name" error={fields.name}>
+      <Field label={t.yourName} htmlFor="i-name" error={fields.name}>
         <Input
           id="i-name"
           autoComplete="name"
@@ -54,7 +118,7 @@ function AcceptForm({ token, inv }: { token: string; inv: InvitationPreview }) {
           onChange={set("name")}
         />
       </Field>
-      <Field label="Phone (optional)" htmlFor="i-phone" error={fields.phone}>
+      <Field label={t.phone} htmlFor="i-phone" error={fields.phone}>
         <Input
           id="i-phone"
           type="tel"
@@ -65,9 +129,9 @@ function AcceptForm({ token, inv }: { token: string; inv: InvitationPreview }) {
         />
       </Field>
       <Field
-        label="Choose a password"
+        label={t.password}
         htmlFor="i-pass"
-        hint="At least 8 characters."
+        hint={t.passwordHint}
         error={
           fields.password ??
           (accept.isError && !Object.keys(fields).length ? accept.error.message : undefined)
@@ -85,14 +149,14 @@ function AcceptForm({ token, inv }: { token: string; inv: InvitationPreview }) {
         />
       </Field>
       <Button type="submit" variant="primary" size="lg" block disabled={accept.isPending}>
-        {accept.isPending ? "Creating your account…" : "Create account and sign in"}{" "}
-        <ArrowRight aria-hidden />
+        {accept.isPending ? t.creating : t.create} <ArrowRight aria-hidden />
       </Button>
     </form>
   )
 }
 
 export function InviteView({ token }: { token: string }) {
+  const t = useMessages(M)
   const preview = useQuery({
     queryKey: ["invitation", token],
     queryFn: () => api.get<InvitationPreview>(`/api/auth/invitations/${encodeURIComponent(token)}`),
@@ -101,28 +165,20 @@ export function InviteView({ token }: { token: string }) {
   return (
     <section className="border-border bg-card shadow-lift grid overflow-hidden rounded-2xl border lg:grid-cols-[1fr_1.05fr]">
       <AuthBrandPanel
-        kicker="You're invited"
-        title={
-          <>
-            Join <span className="text-primary">Machina Rent</span>
-          </>
-        }
-        points={[
-          "Create your account in one step",
-          "Your email is already confirmed by the invitation",
-          "Signed in straight away",
-        ]}
+        kicker={t.kicker}
+        title={t.title(<span className="text-primary">Machina Rent</span>)}
+        points={t.points}
       />
       <div className="p-6 sm:p-10 lg:p-12">
-        <div className="eyebrow mb-2.5">Invitation</div>
-        <h1 className="mb-1.5">Create your account</h1>
+        <div className="eyebrow mb-2.5">{t.eyebrow}</div>
+        <h1 className="mb-1.5">{t.heading}</h1>
         {preview.isError ? (
           <>
             <p className="text-muted-foreground mb-6">
-              {preview.error.message}. Ask the person who invited you for a new link.
+              {preview.error.message}. {t.askNewLink}
             </p>
             <Link href="/login" className={buttonVariants({ variant: "default" })}>
-              Go to sign-in
+              {t.goSignIn}
             </Link>
           </>
         ) : (

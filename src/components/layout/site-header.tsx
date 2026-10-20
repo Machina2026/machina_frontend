@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
 
 import { buttonVariants, Button } from "@/components/ui/button"
+import { useMessages } from "@/i18n/client"
 import { homePathForRole } from "@/lib/auth/roles"
 import { api } from "@/lib/machina/api"
 import { useDraft } from "@/lib/machina/draft"
@@ -15,40 +16,45 @@ import type { SessionRole } from "@/lib/machina/types"
 import { cn } from "@/lib/utils"
 
 import { Container } from "./container"
+import { LanguageSwitch } from "./language-switch"
+import { NAV } from "./nav-text"
 import { Logo } from "./site-chrome"
 
-const PUBLIC_NAV: [string, string][] = [
-  ["/catalog", "Catalogue"],
-  ["/assistant", "Describe your job"],
-  ["/accessories", "Accessories"],
-  ["/become-a-partner", "Become a partner"],
+type NavKey = keyof (typeof NAV)["en"]
+type NavItem = [href: string, label: NavKey]
+
+const PUBLIC_NAV: NavItem[] = [
+  ["/catalog", "catalog"],
+  ["/assistant", "describeJob"],
+  ["/accessories", "accessories"],
+  ["/become-a-partner", "becomePartner"],
 ]
 
 // Partners and admins see their working sections instead of the buyer-facing links.
-const NAV_BY_ROLE: Partial<Record<SessionRole, [string, string][]>> = {
+const NAV_BY_ROLE: Partial<Record<SessionRole, NavItem[]>> = {
   partner: [
-    ["/supplier", "Dashboard"],
-    ["/supplier/equipment", "Equipment"],
-    ["/supplier/quotes", "Requests and quotes"],
-    ["/supplier/orders", "Orders"],
-    ["/catalog", "Marketplace"],
+    ["/supplier", "dashboard"],
+    ["/supplier/equipment", "equipment"],
+    ["/supplier/quotes", "requestsAndQuotes"],
+    ["/supplier/orders", "orders"],
+    ["/catalog", "marketplace"],
   ],
   admin: [
-    ["/admin", "Dashboard"],
-    ["/admin/companies", "Companies"],
-    ["/admin/users", "Users"],
-    ["/admin/audit", "Activity log"],
-    ["/catalog", "Catalogue"],
+    ["/admin", "dashboard"],
+    ["/admin/companies", "companies"],
+    ["/admin/users", "users"],
+    ["/admin/audit", "activityLog"],
+    ["/catalog", "catalog"],
   ],
 }
 
-const ROLE_BADGE: Partial<Record<SessionRole, string>> = {
-  partner: "Partner",
-  admin: "Admin",
+const ROLE_BADGE: Partial<Record<SessionRole, NavKey>> = {
+  partner: "badgePartner",
+  admin: "badgeAdmin",
 }
 
 /** The most specific nav entry matching the pathname, so /supplier/orders doesn't also light up "Dashboard". */
-function activeHref(nav: [string, string][], pathname: string) {
+function activeHref(nav: NavItem[], pathname: string) {
   return nav
     .map(([href]) => href)
     .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
@@ -71,6 +77,7 @@ export function SiteHeader() {
   const me = useMe().data
   const draft = useDraft()
   const resetData = useResetSessionData()
+  const t = useMessages(NAV)
   const role = me?.user.role
   const roleNav = role ? NAV_BY_ROLE[role] : undefined
   const nav = roleNav ?? PUBLIC_NAV
@@ -93,12 +100,12 @@ export function SiteHeader() {
           <Logo />
           {badge && (
             <span className="bg-ink rounded-md px-2 py-0.5 text-[0.7rem] font-semibold text-white">
-              {badge}
+              {t[badge]}
             </span>
           )}
         </div>
         <nav
-          aria-label="Main"
+          aria-label={t.main}
           className={cn(
             "max-lg:shadow-lift flex-1 items-center gap-6 max-lg:absolute max-lg:inset-x-0 max-lg:top-16 max-lg:flex-col max-lg:items-stretch max-lg:gap-0 max-lg:border-b max-lg:bg-white max-lg:p-2",
             open ? "flex" : "max-lg:hidden lg:flex"
@@ -118,7 +125,7 @@ export function SiteHeader() {
                     "text-foreground lg:after:bg-primary max-lg:bg-primary-soft lg:after:absolute lg:after:inset-x-0 lg:after:-bottom-[12px] lg:after:h-[3px] lg:after:rounded-full"
                 )}
               >
-                {label}
+                {t[label]}
               </Link>
             )
           })}
@@ -134,19 +141,21 @@ export function SiteHeader() {
               )}
             >
               <LayoutDashboard aria-hidden className="size-4" />
-              My area
+              {t.myArea}
             </Link>
           )}
+          <LanguageSwitch className="mt-2 self-start sm:hidden" />
         </nav>
         <div className="ml-auto flex shrink-0 items-center gap-2">
+          <LanguageSwitch className="max-sm:hidden" />
           {(!role || role === "client") && (
             <Link
               href="/request"
               className={buttonVariants({ size: "sm", className: "relative" })}
-              title="Request draft"
+              title={t.requestDraft}
             >
               <ClipboardList aria-hidden />
-              <span className="sr-only sm:not-sr-only">Request</span>
+              <span className="sr-only sm:not-sr-only">{t.request}</span>
               {draft.items.length > 0 && (
                 <span className="bg-primary text-ink ring-background absolute -top-1.5 -right-1.5 inline-flex min-w-5 items-center justify-center rounded-full px-1 text-[0.7rem] font-bold ring-2">
                   {draft.items.length}
@@ -165,7 +174,7 @@ export function SiteHeader() {
               <span className="hidden max-w-[180px] min-w-0 leading-tight md:block">
                 <b className="block truncate text-[0.84rem] font-semibold">{me.user.name}</b>
                 <span className="text-muted-foreground block truncate text-[0.74rem]">
-                  {me.org ? stripDemo(me.org.name) : "Machina staff"}
+                  {me.org ? stripDemo(me.org.name) : t.machinaStaff}
                 </span>
               </span>
               <Button
@@ -173,8 +182,8 @@ export function SiteHeader() {
                 variant="ghost"
                 className="size-8"
                 onClick={signOut}
-                aria-label="Sign out"
-                title="Sign out"
+                aria-label={t.signOut}
+                title={t.signOut}
               >
                 <LogOut />
               </Button>
@@ -184,13 +193,13 @@ export function SiteHeader() {
               href="/login"
               className={buttonVariants({ size: "sm", variant: "primary", className: "px-4" })}
             >
-              Sign in
+              {t.signIn}
             </Link>
           )}
           <Button
             size="icon"
             className="lg:hidden"
-            aria-label="Menu"
+            aria-label={t.menu}
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
           >

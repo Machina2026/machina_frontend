@@ -1,10 +1,9 @@
-import type { Metadata } from "next"
-
 import { CompareView } from "@/features/public/compare"
 
 import { toQuery } from "@/lib/search-params"
+import { pageMetadata } from "@/i18n/server"
 
-export const metadata: Metadata = { title: "Compare offers" }
+export const generateMetadata = pageMetadata("compare")
 
 export default async function ComparePage({ searchParams }: PageProps<"/compare">) {
   const query = toQuery(await searchParams)

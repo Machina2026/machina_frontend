@@ -1,8 +1,12 @@
+"use client"
+
 import { ArrowUpRight, ChevronRight, type LucideIcon } from "lucide-react"
 import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
-import { ACTION_KIND } from "@/lib/machina/labels"
+import { useMessages } from "@/i18n/client"
+import { defineMessages } from "@/i18n/messages"
+import { useLabels } from "@/lib/machina/labels"
 import { stripDemo } from "@/lib/machina/format"
 import type { ActionItem } from "@/lib/machina/types"
 import { cn } from "@/lib/utils"
@@ -56,9 +60,24 @@ export function Stat({
   )
 }
 
-function greeting(date = new Date()) {
+const M = defineMessages({
+  en: {
+    morning: "Good morning",
+    afternoon: "Good afternoon",
+    evening: "Good evening",
+    allClear: "All clear: nothing pending.",
+  },
+  it: {
+    morning: "Buongiorno",
+    afternoon: "Buon pomeriggio",
+    evening: "Buonasera",
+    allClear: "Tutto a posto: niente in sospeso.",
+  },
+})
+
+function greetingKey(date = new Date()) {
   const h = date.getHours()
-  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"
+  return h < 12 ? "morning" : h < 18 ? "afternoon" : "evening"
 }
 
 /** Greeting at the top of an area overview. */
@@ -73,6 +92,7 @@ export function WelcomeBanner({
   subtitle: string
   actions?: React.ReactNode
 }) {
+  const t = useMessages(M)
   const first = name?.split(" ")[0]
   return (
     <section className="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -81,7 +101,7 @@ export function WelcomeBanner({
           <p className="text-muted-foreground mb-1 text-[0.92rem] font-medium">{stripDemo(org)}</p>
         )}
         <h1 className="mb-1.5">
-          {greeting()}
+          {t[greetingKey()]}
           {first ? `, ${first}` : ""}
         </h1>
         <p className="text-muted-foreground m-0 text-[1.02rem]">{subtitle}</p>
@@ -118,10 +138,12 @@ export function PanelTitle({
 
 /** "To do" list linking to where each action happens. */
 export function ActionList({ actions }: { actions: ActionItem[] }) {
+  const t = useMessages(M)
+  const L = useLabels()
   if (!actions.length)
     return (
       <p className="text-muted-foreground bg-ok-soft/60 text-ok m-0 rounded-xl px-4 py-3 text-sm">
-        All clear: nothing pending.
+        {t.allClear}
       </p>
     )
   return (
@@ -132,7 +154,9 @@ export function ActionList({ actions }: { actions: ActionItem[] }) {
           href={a.link}
           className="group text-foreground border-border hover:border-primary/40 hover:bg-primary-soft/40 flex items-center gap-3 rounded-xl border px-3.5 py-3 no-underline transition-colors hover:no-underline"
         >
-          <Badge tone={a.kind === "tax" ? "warn" : "accent"}>{ACTION_KIND[a.kind] ?? a.kind}</Badge>
+          <Badge tone={a.kind === "tax" ? "warn" : "accent"}>
+            {L.ACTION_KIND[a.kind] ?? a.kind}
+          </Badge>
           <span className="flex-1 text-[0.93rem] leading-snug">{a.text}</span>
           <ChevronRight
             aria-hidden

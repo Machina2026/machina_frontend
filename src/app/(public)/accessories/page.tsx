@@ -1,8 +1,7 @@
-import type { Metadata } from "next"
-
 import { AccessoriesView } from "@/features/public/accessories"
+import { pageMetadata } from "@/i18n/server"
 
-export const metadata: Metadata = { title: "Accessories" }
+export const generateMetadata = pageMetadata("accessories")
 
 export default function AccessoriesPage() {
   return <AccessoriesView />

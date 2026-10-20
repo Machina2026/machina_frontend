@@ -1,8 +1,7 @@
-import type { Metadata } from "next"
-
 import { SupplierDocuments } from "@/features/supplier/lists"
+import { pageMetadata } from "@/i18n/server"
 
-export const metadata: Metadata = { title: "Documents and draft invoices" }
+export const generateMetadata = pageMetadata("partnerDocuments")
 
 export default function Page() {
   return <SupplierDocuments />

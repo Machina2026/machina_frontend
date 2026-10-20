@@ -15,8 +15,11 @@ import { Card } from "@/components/ui/card"
 import { Check, Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
+import { useCatalogText } from "@/i18n/catalog"
+import { useFormat, useMessages } from "@/i18n/client"
+import { defineMessages, plural } from "@/i18n/messages"
 import { api, ApiError } from "@/lib/machina/api"
-import { addDays, date, eur, num, today } from "@/lib/machina/format"
+import { addDays, today } from "@/lib/machina/format"
 import { useMeta } from "@/lib/machina/hooks"
 import type { CompareResponse, CompareRow, LineType, ModelDetail } from "@/lib/machina/types"
 
@@ -33,7 +36,157 @@ type Body = {
   accessoryIds: string[]
 }
 
+const M = defineMessages({
+  en: {
+    nothingTitle: "Nothing to compare yet",
+    nothingBody:
+      "Open a machine with more than one offer and pick the offers to compare side by side.",
+    goCatalog: "Go to the catalogue",
+    catalog: "Catalogue",
+    comparison: "Comparison",
+    title: "Compare offers",
+    intro: (b: (s: string) => React.ReactNode) => (
+      <>
+        Every offer is calculated with {b("the same period and the same needs")}. Lines the partner
+        still has to price are left out of the total.
+      </>
+    ),
+    from: "From",
+    to: "To",
+    province: "Site province",
+    quantity: "Quantity",
+    delivery: "Delivery to site",
+    withOperator: "With operator",
+    update: "Update comparison",
+    toPrice: "to price",
+    rowPartner: "Partner",
+    areaServed: "area served",
+    outsideArea: "outside area",
+    rowModel: "Model",
+    rowRates: "Rates",
+    perDay: "/day",
+    perWeek: "/week",
+    perMonth: "/month",
+    rowMinRental: "Minimum rental",
+    days: (n: number) => `${n} ${plural(n, "day", "days")}`,
+    applied: "applied",
+    rowHours: "Hours included",
+    hoursPerDay: "h/day",
+    overtime: (price: string) => `overtime ${price}/h`,
+    rowMachine: "Machine rental",
+    rowAccessories: "Accessories",
+    notAvailable: "not available",
+    rowOperator: "Operator",
+    included: "included",
+    notRequested: "not requested",
+    rowTransport: "Transport",
+    collect: "collect from depot",
+    rowDeposit: "Deposit",
+    notInTotal: "not in the total",
+    none: "None",
+    rowIncluded: "Included",
+    rowMissing: "Missing",
+    nothing: "Nothing",
+    rowToConfirm: "To confirm",
+    rowWarnings: "Warnings",
+    rowEstimate: "Estimate",
+    net: "Net:",
+    vat: (rate: number) => `VAT ${rate}%:`,
+    estimatedTotal: "Estimated total:",
+    bestEstimate: "Best estimate",
+    bestEstimateSuffix: " · best estimate",
+    partialEstimate: "Partial estimate",
+    linesExcluded: (n: number) => `${n} ${plural(n, "line", "lines")} to price excluded`,
+    addToRequest: "Add to request",
+    period: "Period:",
+    summary: (
+      days: number | string,
+      prov: string,
+      qty: string,
+      transport: boolean,
+      operator: boolean
+    ) =>
+      ` (${days} calendar days) · Province ${prov} · Quantity ${qty} · ${transport ? "with delivery" : "without delivery"} · ${operator ? "with operator" : "without operator"}. Prices excluding VAT; availability to be confirmed.`,
+  },
+  it: {
+    nothingTitle: "Ancora niente da confrontare",
+    nothingBody:
+      "Apri una macchina con più di un'offerta e scegli le offerte da confrontare una accanto all'altra.",
+    goCatalog: "Vai al catalogo",
+    catalog: "Catalogo",
+    comparison: "Confronto",
+    title: "Confronta le offerte",
+    intro: (b: (s: string) => React.ReactNode) => (
+      <>
+        Ogni offerta è calcolata con {b("lo stesso periodo e le stesse esigenze")}. Le righe che il
+        noleggiatore deve ancora quotare sono escluse dal totale.
+      </>
+    ),
+    from: "Dal",
+    to: "Al",
+    province: "Provincia del cantiere",
+    quantity: "Quantità",
+    delivery: "Consegna in cantiere",
+    withOperator: "Con operatore",
+    update: "Aggiorna il confronto",
+    toPrice: "da quotare",
+    rowPartner: "Noleggiatore",
+    areaServed: "zona servita",
+    outsideArea: "fuori zona",
+    rowModel: "Modello",
+    rowRates: "Tariffe",
+    perDay: "/giorno",
+    perWeek: "/settimana",
+    perMonth: "/mese",
+    rowMinRental: "Noleggio minimo",
+    days: (n: number) => `${n} ${plural(n, "giorno", "giorni")}`,
+    applied: "applicato",
+    rowHours: "Ore incluse",
+    hoursPerDay: "h/giorno",
+    overtime: (price: string) => `ore extra ${price}/h`,
+    rowMachine: "Noleggio macchina",
+    rowAccessories: "Accessori",
+    notAvailable: "non disponibile",
+    rowOperator: "Operatore",
+    included: "incluso",
+    notRequested: "non richiesto",
+    rowTransport: "Trasporto",
+    collect: "ritiro al deposito",
+    rowDeposit: "Cauzione",
+    notInTotal: "esclusa dal totale",
+    none: "Nessuna",
+    rowIncluded: "Incluso",
+    rowMissing: "Mancante",
+    nothing: "Niente",
+    rowToConfirm: "Da confermare",
+    rowWarnings: "Avvisi",
+    rowEstimate: "Stima",
+    net: "Imponibile:",
+    vat: (rate: number) => `IVA ${rate}%:`,
+    estimatedTotal: "Totale stimato:",
+    bestEstimate: "Stima migliore",
+    bestEstimateSuffix: " · stima migliore",
+    partialEstimate: "Stima parziale",
+    linesExcluded: (n: number) =>
+      `${n} ${plural(n, "riga da quotare esclusa", "righe da quotare escluse")}`,
+    addToRequest: "Aggiungi alla richiesta",
+    period: "Periodo:",
+    summary: (
+      days: number | string,
+      prov: string,
+      qty: string,
+      transport: boolean,
+      operator: boolean
+    ) =>
+      ` (${days} giorni di calendario) · Provincia ${prov} · Quantità ${qty} · ${transport ? "con consegna" : "senza consegna"} · ${operator ? "con operatore" : "senza operatore"}. Prezzi IVA esclusa; disponibilità da confermare.`,
+  },
+})
+
+const bold = (s: string) => <b>{s}</b>
+
 export function CompareView({ query }: { query: Record<string, string> }) {
+  const t = useMessages(M)
+  const ct = useCatalogText()
   const meta = useMeta().data
   const model = useQuery({
     queryKey: ["model", query.model],
@@ -76,11 +229,11 @@ export function CompareView({ query }: { query: Record<string, string> }) {
     return (
       <EmptyState
         icon={Scale}
-        title="Nothing to compare yet"
-        description="Open a machine with more than one offer and pick the offers to compare side by side."
+        title={t.nothingTitle}
+        description={t.nothingBody}
         action={
           <Link href="/catalog" className={buttonVariants({ variant: "primary" })}>
-            Go to the catalogue
+            {t.goCatalog}
           </Link>
         }
       />
@@ -93,16 +246,13 @@ export function CompareView({ query }: { query: Record<string, string> }) {
     <>
       <Crumbs
         items={[
-          ["Catalogue", "/catalog"],
+          [t.catalog, "/catalog"],
           ...(m ? [[`${m.brand} ${m.model}`, `/models/${m.id}`] as const] : []),
-          ["Comparison"],
+          [t.comparison],
         ]}
       />
-      <h1>Compare offers</h1>
-      <p className="text-muted-foreground">
-        Every offer is calculated with <b>the same period and the same needs</b>. Lines the partner
-        still has to price are left out of the total.
-      </p>
+      <h1>{t.title}</h1>
+      <p className="text-muted-foreground">{t.intro(bold)}</p>
       <Card flat>
         <form
           onSubmit={(e) => {
@@ -111,7 +261,7 @@ export function CompareView({ query }: { query: Record<string, string> }) {
           }}
         >
           <div className="grid gap-x-3.5 sm:grid-cols-2 lg:grid-cols-4">
-            <Field label="From" htmlFor="c-from" error={fieldErrors.from}>
+            <Field label={t.from} htmlFor="c-from" error={fieldErrors.from}>
               <Input
                 id="c-from"
                 type="date"
@@ -120,7 +270,7 @@ export function CompareView({ query }: { query: Record<string, string> }) {
                 onChange={(e) => setForm({ ...form, from: e.target.value })}
               />
             </Field>
-            <Field label="To" htmlFor="c-to" error={fieldErrors.to}>
+            <Field label={t.to} htmlFor="c-to" error={fieldErrors.to}>
               <Input
                 id="c-to"
                 type="date"
@@ -129,15 +279,17 @@ export function CompareView({ query }: { query: Record<string, string> }) {
                 onChange={(e) => setForm({ ...form, to: e.target.value })}
               />
             </Field>
-            <Field label="Site province" htmlFor="c-prov" error={fieldErrors.province}>
+            <Field label={t.province} htmlFor="c-prov" error={fieldErrors.province}>
               <Select
                 id="c-prov"
                 value={form.province}
                 onChange={(e) => setForm({ ...form, province: e.target.value })}
-                options={(meta?.provinces ?? []).map((p) => [p.id, `${p.name} (${p.id})`] as const)}
+                options={(meta?.provinces ?? []).map(
+                  (p) => [p.id, `${ct.province(p.id, p.name)} (${p.id})`] as const
+                )}
               />
             </Field>
-            <Field label="Quantity" htmlFor="c-qty">
+            <Field label={t.quantity} htmlFor="c-qty">
               <Input
                 id="c-qty"
                 type="number"
@@ -150,12 +302,12 @@ export function CompareView({ query }: { query: Record<string, string> }) {
           </div>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <Check
-              label="Delivery to site"
+              label={t.delivery}
               checked={form.transport}
               onChange={(e) => setForm({ ...form, transport: e.target.checked })}
             />
             <Check
-              label="With operator"
+              label={t.withOperator}
               checked={form.operator}
               onChange={(e) => setForm({ ...form, operator: e.target.checked })}
             />
@@ -175,7 +327,7 @@ export function CompareView({ query }: { query: Record<string, string> }) {
               />
             ))}
             <Button type="submit" variant="primary" disabled={compare.isPending}>
-              Update comparison
+              {t.update}
             </Button>
           </div>
         </form>
@@ -215,6 +367,8 @@ function CompareResults({
   body: Body
   onAdd: (r: CompareRow) => void
 }) {
+  const t = useMessages(M)
+  const { date, eur, num } = useFormat()
   const R = res.results
   // Cheapest offer whose total is complete (partial estimates can't be compared fairly).
   const complete = R.filter((r) => r.totals.complete)
@@ -227,7 +381,7 @@ function CompareResults({
     if (!ls.length) return null
     return ls.map((l, i) => (
       <div key={i}>
-        {l.amount === null ? <Badge tone="warn">to price</Badge> : <b>{eur(l.amount)}</b>}
+        {l.amount === null ? <Badge tone="warn">{t.toPrice}</Badge> : <b>{eur(l.amount)}</b>}
         <Small>
           {type === "accessory" && `${l.description} · `}
           {l.note}
@@ -238,131 +392,134 @@ function CompareResults({
   const muted = (s: string) => <span className="text-muted-foreground">{s}</span>
   const rows: [string, (r: CompareRow) => React.ReactNode][] = [
     [
-      "Partner",
+      t.rowPartner,
       (r) => (
         <>
           <b>{r.offer.partner.name}</b>
           <Small>{r.offer.partner.city}</Small>
           {r.inZone ? (
-            <Badge tone="ok">area served</Badge>
+            <Badge tone="ok">{t.areaServed}</Badge>
           ) : (
-            <Badge tone="warn">outside area</Badge>
+            <Badge tone="warn">{t.outsideArea}</Badge>
           )}
         </>
       ),
     ],
-    ["Model", (r) => `${r.model.brand} ${r.model.model}`],
+    [t.rowModel, (r) => `${r.model.brand} ${r.model.model}`],
     [
-      "Rates",
+      t.rowRates,
       (r) => (
         <>
-          {eur(r.offer.prices.day)}/day
+          {eur(r.offer.prices.day)}
+          {t.perDay}
           {r.offer.prices.week && (
             <>
               <br />
-              {eur(r.offer.prices.week)}/week
+              {eur(r.offer.prices.week)}
+              {t.perWeek}
             </>
           )}
           {r.offer.prices.month && (
             <>
               <br />
-              {eur(r.offer.prices.month)}/month
+              {eur(r.offer.prices.month)}
+              {t.perMonth}
             </>
           )}
         </>
       ),
     ],
     [
-      "Minimum rental",
+      t.rowMinRental,
       (r) => (
         <>
-          {r.offer.minDays} {r.offer.minDays === 1 ? "day" : "days"}{" "}
-          {r.offer.minDays > r.days && <Badge tone="warn">applied</Badge>}
+          {t.days(r.offer.minDays)}{" "}
+          {r.offer.minDays > r.days && <Badge tone="warn">{t.applied}</Badge>}
         </>
       ),
     ],
     [
-      "Hours included",
+      t.rowHours,
       (r) => (
         <>
-          {num(r.offer.hoursPerDay)} h/day
-          {r.offer.extraHourPrice && <Small>overtime {eur(r.offer.extraHourPrice)}/h</Small>}
+          {num(r.offer.hoursPerDay)} {t.hoursPerDay}
+          {r.offer.extraHourPrice && <Small>{t.overtime(eur(r.offer.extraHourPrice))}</Small>}
         </>
       ),
     ],
-    ["Machine rental", (r) => lineAmt(r, "equipment") ?? "—"],
+    [t.rowMachine, (r) => lineAmt(r, "equipment") ?? "—"],
     [
-      "Accessories",
+      t.rowAccessories,
       (r) =>
         lineAmt(r, "accessory") ??
-        (body.accessoryIds.length ? <Badge tone="bad">not available</Badge> : muted("—")),
+        (body.accessoryIds.length ? <Badge tone="bad">{t.notAvailable}</Badge> : muted("—")),
     ],
     [
-      "Operator",
+      t.rowOperator,
       (r) =>
         r.offer.operator.mode === "included" ? (
-          <Badge tone="ok">included</Badge>
+          <Badge tone="ok">{t.included}</Badge>
         ) : (
           (lineAmt(r, "operator") ??
-          (body.operator ? <Badge tone="bad">not available</Badge> : muted("not requested")))
+          (body.operator ? <Badge tone="bad">{t.notAvailable}</Badge> : muted(t.notRequested)))
         ),
     ],
     [
-      "Transport",
+      t.rowTransport,
       (r) =>
         lineAmt(r, "transport") ??
-        (body.transport ? <Badge tone="bad">not available</Badge> : muted("collect from depot")),
+        (body.transport ? <Badge tone="bad">{t.notAvailable}</Badge> : muted(t.collect)),
     ],
     [
-      "Deposit",
+      t.rowDeposit,
       (r) =>
         r.offer.deposit ? (
           <>
             {eur(r.offer.deposit)}
-            <Small>not in the total</Small>
+            <Small>{t.notInTotal}</Small>
           </>
         ) : (
-          "None"
+          t.none
         ),
     ],
-    ["Included", (r) => <MarkList tone="tick" className="text-sm" items={r.included} />],
+    [t.rowIncluded, (r) => <MarkList tone="tick" className="text-sm" items={r.included} />],
     [
-      "Missing",
+      t.rowMissing,
       (r) =>
         r.missing.length ? (
           <MarkList tone="miss" className="text-sm" items={r.missing} />
         ) : (
-          muted("Nothing")
+          muted(t.nothing)
         ),
     ],
-    ["To confirm", (r) => <MarkList tone="confirm" className="text-sm" items={r.toConfirm} />],
+    [t.rowToConfirm, (r) => <MarkList tone="confirm" className="text-sm" items={r.toConfirm} />],
     [
-      "Warnings",
+      t.rowWarnings,
       (r) => (r.warnings.length ? <MarkList className="text-sm" items={r.warnings} /> : muted("—")),
     ],
     [
-      "Estimate",
+      t.rowEstimate,
       (r) => (
         <>
           <div>
-            Net: <b>{eur(r.totals.net)}</b>
+            {t.net} <b>{eur(r.totals.net)}</b>
           </div>
           <Small>
-            VAT {r.totals.vatRate}%: {eur(r.totals.vat)}
+            {t.vat(r.totals.vatRate)} {eur(r.totals.vat)}
           </Small>
           {r.totals.complete ? (
             <div>
-              Estimated total: <b className="text-[1.05rem]">{eur(r.totals.gross)}</b>
+              {t.estimatedTotal} <b className="text-[1.05rem]">{eur(r.totals.gross)}</b>
               {r.offer.id === bestId && (
                 <div className="mt-1">
-                  <Badge tone="ok">Best estimate</Badge>
+                  <Badge tone="ok">{t.bestEstimate}</Badge>
                 </div>
               )}
             </div>
           ) : (
             <div>
-              <Badge tone="warn">Partial estimate</Badge>
-              <Small>{r.totals.missing} lines to price excluded</Small>
+              <Badge tone="warn">{t.partialEstimate}</Badge>
+              <Small>{t.linesExcluded(r.totals.missing)}</Small>
             </div>
           )}
         </>
@@ -376,7 +533,7 @@ function CompareResults({
       block={block}
       onClick={() => onAdd(r)}
     >
-      Add to request
+      {t.addToRequest}
     </Button>
   )
   // On phones the estimate moves up, right after the partner.
@@ -384,14 +541,11 @@ function CompareResults({
   return (
     <>
       <Alert tone="info" size="sm" className="mb-3">
-        Period:{" "}
+        {t.period}{" "}
         <b>
           {date(res.period.from)} → {date(res.period.to)}
-        </b>{" "}
-        ({R[0]?.days ?? ""} calendar days) · Province {body.province} · Quantity {body.qty} ·{" "}
-        {body.transport ? "with delivery" : "without delivery"} ·{" "}
-        {body.operator ? "with operator" : "without operator"}. Prices excluding VAT; availability
-        to be confirmed.
+        </b>
+        {t.summary(R[0]?.days ?? "", body.province, body.qty, body.transport, body.operator)}
       </Alert>
       <div className="bg-card hidden overflow-x-auto rounded-lg border md:block">
         <table className="data-table">
@@ -401,7 +555,7 @@ function CompareResults({
               {R.map((r) => (
                 <th key={r.offer.id} className={r.offer.id === bestId ? "text-ok!" : undefined}>
                   {r.offer.partner.name}
-                  {r.offer.id === bestId && " · best estimate"}
+                  {r.offer.id === bestId && t.bestEstimateSuffix}
                 </th>
               ))}
             </tr>

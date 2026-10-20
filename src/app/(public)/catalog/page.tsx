@@ -1,10 +1,9 @@
-import type { Metadata } from "next"
-
 import { CatalogView } from "@/features/public/catalog"
 
 import { toQuery } from "@/lib/search-params"
+import { pageMetadata } from "@/i18n/server"
 
-export const metadata: Metadata = { title: "Catalogue" }
+export const generateMetadata = pageMetadata("catalog")
 
 export default async function CatalogPage({ searchParams }: PageProps<"/catalog">) {
   const query = toQuery(await searchParams)

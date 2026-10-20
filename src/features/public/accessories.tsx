@@ -8,7 +8,10 @@ import { PageHead, Small } from "@/components/app/bits"
 import { QueryView } from "@/components/app/query-view"
 import { Card } from "@/components/ui/card"
 import { api } from "@/lib/machina/api"
-import { eur, eurWhole, stripDemo } from "@/lib/machina/format"
+import { useCatalogText } from "@/i18n/catalog"
+import { useFormat, useMessages } from "@/i18n/client"
+import { defineMessages } from "@/i18n/messages"
+import { stripDemo } from "@/lib/machina/format"
 import type { AccessoryListing } from "@/lib/machina/types"
 
 const GROUP_ICON: Record<string, LucideIcon> = {
@@ -19,17 +22,45 @@ const GROUP_ICON: Record<string, LucideIcon> = {
   Power: Zap,
 }
 
+const M = defineMessages({
+  en: {
+    eyebrow: "Attachments",
+    title: "Compatible accessories",
+    intro: "Accessories are rented together with a compatible machine. Prices excluding VAT.",
+    groups: "Accessory groups",
+    included: "Included",
+    from: "from",
+    perDay: "/day",
+    withModel: (model: string) => `with ${model}`,
+    noPartner: "No partner lists it at the moment.",
+  },
+  it: {
+    eyebrow: "Attrezzature",
+    title: "Accessori compatibili",
+    intro: "Gli accessori si noleggiano insieme a una macchina compatibile. Prezzi IVA esclusa.",
+    groups: "Gruppi di accessori",
+    included: "Incluso",
+    from: "da",
+    perDay: "/giorno",
+    withModel: (model: string) => `con ${model}`,
+    noPartner: "Al momento nessun noleggiatore lo offre.",
+  },
+})
+
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-")
 
 export function AccessoriesView() {
+  const t = useMessages(M)
+  const ct = useCatalogText()
+  const { eur, eurWhole } = useFormat()
   const q = useQuery({
     queryKey: ["accessories"],
     queryFn: () => api.get<{ accessories: AccessoryListing[] }>("/api/accessories"),
   })
   return (
     <>
-      <PageHead eyebrow="Attachments" title="Compatible accessories">
-        Accessories are rented together with a compatible machine. Prices excluding VAT.
+      <PageHead eyebrow={t.eyebrow} title={t.title}>
+        {t.intro}
       </PageHead>
       <QueryView query={q}>
         {({ accessories }) => {
@@ -37,7 +68,7 @@ export function AccessoriesView() {
           for (const a of accessories) groups.set(a.group, [...(groups.get(a.group) ?? []), a])
           return (
             <>
-              <nav aria-label="Accessory groups" className="mb-8 flex flex-wrap gap-2">
+              <nav aria-label={t.groups} className="mb-8 flex flex-wrap gap-2">
                 {[...groups].map(([group, items]) => {
                   const Icon = GROUP_ICON[group] ?? Puzzle
                   return (
@@ -49,7 +80,7 @@ export function AccessoriesView() {
                       <span className="bg-primary-soft text-brand inline-flex size-7 items-center justify-center rounded-full">
                         <Icon aria-hidden className="size-3.5" />
                       </span>
-                      {group}
+                      {ct.accessoryGroup(group)}
                       <span className="text-faint text-[0.8rem]">{items.length}</span>
                     </a>
                   )
@@ -63,7 +94,7 @@ export function AccessoriesView() {
                       <span className="icon-tile">
                         <Icon aria-hidden />
                       </span>
-                      <h2 className="m-0">{group}</h2>
+                      <h2 className="m-0">{ct.accessoryGroup(group)}</h2>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                       {items.map((a) => {
@@ -76,14 +107,14 @@ export function AccessoriesView() {
                               {(paid.length > 0 || included) && (
                                 <span className="bg-ink shrink-0 rounded-full px-2.5 py-1 text-[0.72rem] font-semibold whitespace-nowrap text-white">
                                   {included && !paid.length ? (
-                                    <span className="text-primary">Included</span>
+                                    <span className="text-primary">{t.included}</span>
                                   ) : (
                                     <>
-                                      from{" "}
+                                      {t.from}{" "}
                                       <span className="text-primary">
                                         {eurWhole(Math.min(...paid))}
                                       </span>
-                                      /day
+                                      {t.perDay}
                                     </>
                                   )}
                                 </span>
@@ -116,21 +147,21 @@ export function AccessoriesView() {
                                         href={`/models/${x.modelId}`}
                                         className="text-muted-foreground text-[0.8rem]"
                                       >
-                                        with {x.model}
+                                        {t.withModel(x.model)}
                                       </Link>
                                     </span>
                                     <span className="shrink-0 font-semibold tabular-nums">
                                       {x.included ? (
-                                        <span className="text-ok">Included</span>
+                                        <span className="text-ok">{t.included}</span>
                                       ) : (
-                                        `${eur(x.day)}/day`
+                                        `${eur(x.day)}${t.perDay}`
                                       )}
                                     </span>
                                   </li>
                                 ))}
                               </ul>
                             ) : (
-                              <Small className="mt-auto">No partner lists it at the moment.</Small>
+                              <Small className="mt-auto">{t.noPartner}</Small>
                             )}
                           </Card>
                         )

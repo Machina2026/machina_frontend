@@ -1,6 +1,9 @@
+"use client"
+
 import { TriangleAlert } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { useCommon } from "@/i18n/common"
 
 type ErrorStateProps = {
   title?: string
@@ -8,11 +11,8 @@ type ErrorStateProps = {
   onRetry?: () => void
 }
 
-export function ErrorState({
-  title = "Something went wrong",
-  description = "Please try again. If the problem continues, contact support.",
-  onRetry,
-}: ErrorStateProps) {
+export function ErrorState({ title, description, onRetry }: ErrorStateProps) {
+  const c = useCommon()
   return (
     <div
       role="alert"
@@ -20,10 +20,10 @@ export function ErrorState({
     >
       <TriangleAlert aria-hidden className="text-destructive size-8" />
       <div className="grid gap-1">
-        <p className="font-medium">{title}</p>
-        <p className="text-muted-foreground max-w-md text-sm">{description}</p>
+        <p className="font-medium">{title ?? c.errorTitle}</p>
+        <p className="text-muted-foreground max-w-md text-sm">{description ?? c.errorBody}</p>
       </div>
-      {onRetry && <Button onClick={onRetry}>Try again</Button>}
+      {onRetry && <Button onClick={onRetry}>{c.tryAgain}</Button>}
     </div>
   )
 }

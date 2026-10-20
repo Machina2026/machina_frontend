@@ -14,17 +14,85 @@ import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { api, ApiError, downloadFile, readUpload } from "@/lib/machina/api"
-import { dateTime, num } from "@/lib/machina/format"
+import { useCatalogText } from "@/i18n/catalog"
+import { useFormat, useMessages } from "@/i18n/client"
+import { defineMessages } from "@/i18n/messages"
 import { meKey, useMeta } from "@/lib/machina/hooks"
 import type { PartnerProfile } from "@/lib/machina/types"
 
 import { useSupplierProfile } from "./equipment"
 
+const M = defineMessages({
+  en: {
+    title: "Company profile",
+    saved: "Profile saved",
+    attached: "PDF catalogue attached",
+    details: "Company details and contacts",
+    verifying: "Account being verified",
+    verifyingBody: "Machina staff will verify the company details.",
+    companyName: "Company name",
+    vat: "VAT number",
+    pec: "Certified email (PEC)",
+    address: "Registered address",
+    town: "Town",
+    province: "Province",
+    email: "Email",
+    phone: "Phone",
+    zones: "Area served (default for new machines)",
+    terms: "General terms",
+    save: "Save profile",
+    pdf: "PDF catalogue",
+    pdfIntro: (b: (s: string) => React.ReactNode) => (
+      <>
+        You can attach your catalogue as a PDF for reference.{" "}
+        {b("Data is not extracted automatically")}: machines have to be added by hand or imported
+        from CSV.
+      </>
+    ),
+    download: "Download",
+    noAttachments: "No attachments.",
+    upload: "Upload PDF (max 5 MB)",
+  },
+  it: {
+    title: "Profilo aziendale",
+    saved: "Profilo salvato",
+    attached: "Catalogo PDF allegato",
+    details: "Dati aziendali e contatti",
+    verifying: "Account in verifica",
+    verifyingBody: "Lo staff Machina verificherà i dati aziendali.",
+    companyName: "Ragione sociale",
+    vat: "Partita IVA",
+    pec: "PEC",
+    address: "Sede legale",
+    town: "Comune",
+    province: "Provincia",
+    email: "Email",
+    phone: "Telefono",
+    zones: "Zona servita (predefinita per le nuove macchine)",
+    terms: "Condizioni generali",
+    save: "Salva il profilo",
+    pdf: "Catalogo PDF",
+    pdfIntro: (b: (s: string) => React.ReactNode) => (
+      <>
+        Puoi allegare il tuo catalogo in PDF come riferimento.{" "}
+        {b("I dati non vengono estratti automaticamente")}: le macchine vanno aggiunte a mano o
+        importate da CSV.
+      </>
+    ),
+    download: "Scarica",
+    noAttachments: "Nessun allegato.",
+    upload: "Carica un PDF (max 5 MB)",
+  },
+})
+
+const bold = (s: string) => <b>{s}</b>
+
 export function SupplierProfile() {
+  const t = useMessages(M)
   const q = useSupplierProfile()
   return (
     <>
-      <PageHead title="Company profile" />
+      <PageHead title={t.title} />
       <QueryView query={q}>{(p) => <ProfileForms key={p.id} profile={p} />}</QueryView>
     </>
   )
@@ -45,6 +113,9 @@ type Fields = Pick<
 >
 
 function ProfileForms({ profile: p }: { profile: PartnerProfile }) {
+  const t = useMessages(M)
+  const ct = useCatalogText()
+  const { dateTime, num } = useFormat()
   const qc = useQueryClient()
   const meta = useMeta().data
   const [f, setF] = useState<Fields>({
@@ -62,7 +133,7 @@ function ProfileForms({ profile: p }: { profile: PartnerProfile }) {
   const save = useMutation({
     mutationFn: () => api.put("/api/partner/profile", f),
     onSuccess: () => {
-      toast.success("Profile saved")
+      toast.success(t.saved)
       void qc.invalidateQueries({ queryKey: ["supplier", "profile"] })
       void qc.invalidateQueries({ queryKey: meKey })
     },
@@ -72,7 +143,7 @@ function ProfileForms({ profile: p }: { profile: PartnerProfile }) {
     mutationFn: async (file: File) =>
       api.post("/api/partner/attachments", { file: await readUpload(file) }),
     onSuccess: () => {
-      toast.success("PDF catalogue attached")
+      toast.success(t.attached)
       void qc.invalidateQueries({ queryKey: ["supplier", "profile"] })
     },
     onError: (err) => toast.error(err.message),
@@ -97,10 +168,10 @@ function ProfileForms({ profile: p }: { profile: PartnerProfile }) {
   return (
     <div className="grid items-start gap-4 lg:grid-cols-2">
       <Card>
-        <h3>Company details and contacts</h3>
+        <h3>{t.details}</h3>
         {!p.verified && (
-          <Alert tone="warn" size="sm" className="mb-3" title="Account being verified">
-            Machina staff will verify the company details.
+          <Alert tone="warn" size="sm" className="mb-3" title={t.verifying}>
+            {t.verifyingBody}
           </Alert>
         )}
         <form
@@ -109,29 +180,31 @@ function ProfileForms({ profile: p }: { profile: PartnerProfile }) {
             save.mutate()
           }}
         >
-          {text("name", "Company name")}
+          {text("name", t.companyName)}
           <div className="grid gap-x-3.5 sm:grid-cols-2">
-            {text("vat", "VAT number")}
-            {text("pec", "Certified email (PEC)")}
-            {text("address", "Registered address")}
-            {text("city", "Town")}
-            <Field label="Province" htmlFor="pr-province" error={errors.province}>
+            {text("vat", t.vat)}
+            {text("pec", t.pec)}
+            {text("address", t.address)}
+            {text("city", t.town)}
+            <Field label={t.province} htmlFor="pr-province" error={errors.province}>
               <Select
                 id="pr-province"
                 value={f.province}
                 onChange={(e) => setF({ ...f, province: e.target.value })}
-                options={(meta?.provinces ?? []).map((x) => [x.id, `${x.name} (${x.id})`] as const)}
+                options={(meta?.provinces ?? []).map(
+                  (x) => [x.id, `${ct.province(x.id, x.name)} (${x.id})`] as const
+                )}
               />
             </Field>
-            {text("email", "Email", "email")}
-            {text("phone", "Phone", "tel")}
+            {text("email", t.email, "email")}
+            {text("phone", t.phone, "tel")}
           </div>
-          <Field label="Area served (default for new machines)" error={errors.zones}>
+          <Field label={t.zones} error={errors.zones}>
             <div className="flex flex-wrap gap-1.5">
               {(meta?.provinces ?? []).map((x) => (
                 <ChipCheck
                   key={x.id}
-                  label={x.name}
+                  label={ct.province(x.id, x.name)}
                   checked={f.zones.includes(x.id)}
                   onChange={(e) =>
                     setF({
@@ -145,7 +218,7 @@ function ProfileForms({ profile: p }: { profile: PartnerProfile }) {
               ))}
             </div>
           </Field>
-          <Field label="General terms" htmlFor="pr-cond">
+          <Field label={t.terms} htmlFor="pr-cond">
             <Textarea
               id="pr-cond"
               rows={4}
@@ -154,17 +227,13 @@ function ProfileForms({ profile: p }: { profile: PartnerProfile }) {
             />
           </Field>
           <Button type="submit" variant="primary" disabled={save.isPending}>
-            Save profile
+            {t.save}
           </Button>
         </form>
       </Card>
       <Card>
-        <h3>PDF catalogue</h3>
-        <Small className="mb-3">
-          You can attach your catalogue as a PDF for reference.{" "}
-          <b>Data is not extracted automatically</b>: machines have to be added by hand or imported
-          from CSV.
-        </Small>
+        <h3>{t.pdf}</h3>
+        <Small className="mb-3">{t.pdfIntro(bold)}</Small>
         {p.attachmentsMeta.length ? (
           <div className="divide-y">
             {p.attachmentsMeta.map((file) => (
@@ -181,15 +250,15 @@ function ProfileForms({ profile: p }: { profile: PartnerProfile }) {
                     downloadFile(file.id, file.name).catch((err) => toast.error(err.message))
                   }
                 >
-                  Download
+                  {t.download}
                 </Button>
               </div>
             ))}
           </div>
         ) : (
-          <Small>No attachments.</Small>
+          <Small>{t.noAttachments}</Small>
         )}
-        <Field label="Upload PDF (max 5 MB)" htmlFor="pr-pdf" className="mt-3 mb-0">
+        <Field label={t.upload} htmlFor="pr-pdf" className="mt-3 mb-0">
           <input
             id="pr-pdf"
             type="file"

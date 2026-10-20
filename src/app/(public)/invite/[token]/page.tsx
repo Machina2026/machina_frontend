@@ -1,8 +1,7 @@
-import type { Metadata } from "next"
-
 import { InviteView } from "@/features/public/invite"
+import { pageMetadata } from "@/i18n/server"
 
-export const metadata: Metadata = { title: "Invitation", robots: { index: false } }
+export const generateMetadata = pageMetadata("invitation", { robots: { index: false } })
 
 export default async function Page({ params }: PageProps<"/invite/[token]">) {
   const { token } = await params

@@ -1,8 +1,7 @@
-import type { Metadata } from "next"
-
 import { AdminCompany } from "@/features/admin/companies"
+import { pageMetadata } from "@/i18n/server"
 
-export const metadata: Metadata = { title: "Company" }
+export const generateMetadata = pageMetadata("company")
 
 export default async function Page({ params }: PageProps<"/admin/companies/[id]">) {
   const { id } = await params

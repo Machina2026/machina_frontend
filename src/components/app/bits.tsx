@@ -1,6 +1,10 @@
+"use client"
+
 import Link from "next/link"
 import * as React from "react"
 
+import { NAV } from "@/components/layout/nav-text"
+import { useMessages } from "@/i18n/client"
 import { cn } from "@/lib/utils"
 
 /** Page title row: title, optional subtitle and actions. */
@@ -32,9 +36,10 @@ export function PageHead({
 
 /** Breadcrumbs: [label, href] pairs, last item is the current page. */
 export function Crumbs({ items }: { items: (readonly [string, string?])[] }) {
+  const t = useMessages(NAV)
   return (
     <nav
-      aria-label="Breadcrumb"
+      aria-label={t.breadcrumb}
       className="text-muted-foreground mb-4 flex flex-wrap items-center gap-1.5 text-[0.85rem]"
     >
       {items.map(([label, href], i) => (

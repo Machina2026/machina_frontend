@@ -15,6 +15,10 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { Check, Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
+import { useCatalogText } from "@/i18n/catalog"
+import { useMessages } from "@/i18n/client"
+import { useCommon } from "@/i18n/common"
+import { defineMessages } from "@/i18n/messages"
 import { api, qs } from "@/lib/machina/api"
 import { daysBetween } from "@/lib/machina/format"
 import { useMeta } from "@/lib/machina/hooks"
@@ -23,8 +27,99 @@ import { cn } from "@/lib/utils"
 
 export type CatalogQuery = Record<string, string>
 
+const M = defineMessages({
+  en: {
+    eyebrow: "Catalogue",
+    title: "Find the right machine",
+    intro:
+      "Models available from our partners. Each model can have several offers with different prices and conditions.",
+    filters: "Filters",
+    categories: "Categories",
+    allEquipment: "All equipment",
+    searchPlaceholder: "Brand, model, job…",
+    category: "Category",
+    all: "All",
+    type: "Type",
+    area: "Area (province served)",
+    allPiedmont: "All of Piedmont",
+    from: "From",
+    to: "To",
+    withOperator: "Available with an operator",
+    dailyPrice: "Daily price (€)",
+    minPrice: "Minimum daily price",
+    maxPrice: "Maximum daily price",
+    min: "min",
+    max: "max",
+    features: "Features",
+    liveHint: "Lists update as you change them; press Search for text and number fields.",
+    noMatch: "No machine matches these filters",
+    noMatchHint:
+      "Try removing a filter, or describe the job and let the assistant pick the machines.",
+    askAssistant: "Describe your job to the assistant",
+    summary: (n: number, days: number | null) =>
+      `${n === 1 ? "model" : "models"} · prices excluding VAT${days ? ` · estimates for ${days} calendar days` : ""}`,
+    sortBy: "Sort by",
+    sortCategory: "Category",
+    sortLowest: "Lowest daily price",
+    sortHighest: "Highest daily price",
+    addDates: (b: (s: string) => React.ReactNode) => (
+      <>
+        Add your {b("rental dates")} in the filters to see what each machine would cost for your
+        period.
+      </>
+    ),
+  },
+  it: {
+    eyebrow: "Catalogo",
+    title: "Trova la macchina giusta",
+    intro:
+      "I modelli disponibili presso i nostri partner. Ogni modello può avere più offerte con prezzi e condizioni diversi.",
+    filters: "Filtri",
+    categories: "Categorie",
+    allEquipment: "Tutte le macchine",
+    searchPlaceholder: "Marca, modello, lavoro…",
+    category: "Categoria",
+    all: "Tutte",
+    type: "Tipo",
+    area: "Zona (provincia servita)",
+    allPiedmont: "Tutto il Piemonte",
+    from: "Dal",
+    to: "Al",
+    withOperator: "Disponibile con operatore",
+    dailyPrice: "Prezzo giornaliero (€)",
+    minPrice: "Prezzo giornaliero minimo",
+    maxPrice: "Prezzo giornaliero massimo",
+    min: "min",
+    max: "max",
+    features: "Caratteristiche",
+    liveHint:
+      "Gli elenchi si aggiornano mentre li cambi; premi Cerca per i campi di testo e numerici.",
+    noMatch: "Nessuna macchina corrisponde a questi filtri",
+    noMatchHint:
+      "Prova a togliere un filtro, oppure descrivi il lavoro e lascia che l'assistente scelga le macchine.",
+    askAssistant: "Descrivi il lavoro all'assistente",
+    summary: (n: number, days: number | null) =>
+      `${n === 1 ? "modello" : "modelli"} · prezzi IVA esclusa${days ? ` · stime per ${days} giorni di calendario` : ""}`,
+    sortBy: "Ordina per",
+    sortCategory: "Categoria",
+    sortLowest: "Prezzo giornaliero più basso",
+    sortHighest: "Prezzo giornaliero più alto",
+    addDates: (b: (s: string) => React.ReactNode) => (
+      <>
+        Aggiungi le {b("date del noleggio")} nei filtri per vedere quanto costerebbe ogni macchina
+        nel tuo periodo.
+      </>
+    ),
+  },
+})
+
+const bold = (s: string) => <b>{s}</b>
+
 export function CatalogView({ query }: { query: CatalogQuery }) {
   const router = useRouter()
+  const t = useMessages(M)
+  const c = useCommon()
+  const ct = useCatalogText()
   const meta = useMeta().data
   const [filters, setFilters] = useState<CatalogQuery>(query)
   const [open, setOpen] = useState(false)
@@ -33,7 +128,7 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
     queryFn: () => api.get<CatalogResponse>(`/api/catalog${qs(query)}`),
   })
 
-  const cat = meta?.categories.find((c) => c.id === query.cat)
+  const cat = meta?.categories.find((x) => x.id === query.cat)
   const schemaKeys = cat ? meta?.specSchema[cat.id]?.map((s) => s.key) : null
   const specFilters = (meta?.specFilters ?? []).filter(
     (f) => !schemaKeys || schemaKeys.includes(f.key)
@@ -48,27 +143,26 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
   return (
     <>
       <PageHead
-        eyebrow="Catalogue"
-        title={cat ? cat.name : "Find the right machine"}
+        eyebrow={t.eyebrow}
+        title={cat ? ct.category(cat.id, cat.name) : t.title}
         actions={
           <Button className="lg:hidden" onClick={() => setOpen(true)}>
-            <SlidersHorizontal /> Filters
+            <SlidersHorizontal /> {t.filters}
           </Button>
         }
       >
-        Models available from our partners. Each model can have several offers with different prices
-        and conditions.
+        {t.intro}
       </PageHead>
       <nav
-        aria-label="Categories"
+        aria-label={t.categories}
         className="mb-8 flex [scrollbar-width:none] gap-2 max-sm:-mx-4 max-sm:overflow-x-auto max-sm:px-4 sm:flex-wrap"
       >
-        {[{ id: "", name: "All equipment" }, ...(meta?.categories ?? [])].map((c) => {
-          const on = (query.cat ?? "") === c.id
+        {[{ id: "", name: t.allEquipment }, ...(meta?.categories ?? [])].map((x) => {
+          const on = (query.cat ?? "") === x.id
           return (
             <Link
-              key={c.id || "all"}
-              href={`/catalog${qs({ ...keep, cat: c.id })}`}
+              key={x.id || "all"}
+              href={`/catalog${qs({ ...keep, cat: x.id })}`}
               aria-current={on ? "page" : undefined}
               className={cn(
                 "shrink-0 rounded-full border px-4 py-2 text-[0.9rem] font-medium whitespace-nowrap no-underline transition-colors hover:no-underline",
@@ -77,14 +171,14 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
                   : "border-border bg-card text-foreground hover:border-foreground/40"
               )}
             >
-              {c.name}
+              {x.id ? ct.category(x.id, x.name) : x.name}
             </Link>
           )
         })}
       </nav>
       <div className="grid items-start gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
         <form
-          aria-label="Filters"
+          aria-label={t.filters}
           onSubmit={(e) => {
             e.preventDefault()
             apply(filters)
@@ -96,54 +190,56 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
         >
           <div className="border-border mb-4 flex items-center justify-between border-b pb-3">
             <h3 className="m-0 flex items-center gap-2 text-[1.02rem]">
-              <SlidersHorizontal aria-hidden className="size-4" /> Filters
+              <SlidersHorizontal aria-hidden className="size-4" /> {t.filters}
             </h3>
             <Button size="sm" className="lg:hidden" onClick={() => setOpen(false)}>
-              Close
+              {c.close}
             </Button>
           </div>
-          <Field label="Search" htmlFor="f-q">
+          <Field label={c.search} htmlFor="f-q">
             <Input
               id="f-q"
-              placeholder="Brand, model, job…"
+              placeholder={t.searchPlaceholder}
               value={filters.q ?? ""}
               onChange={(e) => set("q", e.target.value)}
             />
           </Field>
-          <Field label="Category" htmlFor="f-cat">
+          <Field label={t.category} htmlFor="f-cat">
             <Select
               id="f-cat"
               value={filters.cat ?? ""}
               onChange={(e) => apply({ ...filters, cat: e.target.value, sub: "" })}
               options={[
-                ["", "All"],
-                ...(meta?.categories ?? []).map((c) => [c.id, c.name] as const),
+                ["", t.all],
+                ...(meta?.categories ?? []).map((x) => [x.id, ct.category(x.id, x.name)] as const),
               ]}
             />
           </Field>
           {cat && (
-            <Field label="Type" htmlFor="f-sub">
+            <Field label={t.type} htmlFor="f-sub">
               <Select
                 id="f-sub"
                 value={filters.sub ?? ""}
                 onChange={(e) => apply({ ...filters, sub: e.target.value })}
-                options={[["", "All"], ...cat.subtypes.map((s) => [s, s] as const)]}
+                options={[["", t.all], ...cat.subtypes.map((s) => [s, ct.subtype(s)] as const)]}
               />
             </Field>
           )}
-          <Field label="Area (province served)" htmlFor="f-prov">
+          <Field label={t.area} htmlFor="f-prov">
             <Select
               id="f-prov"
               value={filters.prov ?? ""}
               onChange={(e) => apply({ ...filters, prov: e.target.value })}
               options={[
-                ["", "All of Piedmont"],
-                ...(meta?.provinces ?? []).map((p) => [p.id, `${p.name} (${p.id})`] as const),
+                ["", t.allPiedmont],
+                ...(meta?.provinces ?? []).map(
+                  (p) => [p.id, `${ct.province(p.id, p.name)} (${p.id})`] as const
+                ),
               ]}
             />
           </Field>
           <div className="grid gap-x-3 max-lg:grid-cols-2">
-            <Field label="From" htmlFor="f-from">
+            <Field label={t.from} htmlFor="f-from">
               <Input
                 id="f-from"
                 type="date"
@@ -151,7 +247,7 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
                 onChange={(e) => apply({ ...filters, from: e.target.value })}
               />
             </Field>
-            <Field label="To" htmlFor="f-to">
+            <Field label={t.to} htmlFor="f-to">
               <Input
                 id="f-to"
                 type="date"
@@ -162,35 +258,35 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
           </div>
           <Check
             className="mb-3.5"
-            label="Available with an operator"
+            label={t.withOperator}
             checked={filters.operator === "1"}
             onChange={(e) => apply({ ...filters, operator: e.target.checked ? "1" : "" })}
           />
           <fieldset className="mb-3.5">
-            <legend className="mb-1 text-[0.85rem] font-semibold">Daily price (€)</legend>
+            <legend className="mb-1 text-[0.85rem] font-semibold">{t.dailyPrice}</legend>
             <div className="flex gap-2">
               <Input
                 type="number"
                 min={0}
-                aria-label="Minimum daily price"
-                placeholder="min"
+                aria-label={t.minPrice}
+                placeholder={t.min}
                 value={filters.pmin ?? ""}
                 onChange={(e) => set("pmin", e.target.value)}
               />
               <Input
                 type="number"
                 min={0}
-                aria-label="Maximum daily price"
-                placeholder="max"
+                aria-label={t.maxPrice}
+                placeholder={t.max}
                 value={filters.pmax ?? ""}
                 onChange={(e) => set("pmax", e.target.value)}
               />
             </div>
           </fieldset>
           <details open={specFilters.some((f) => query[`spec_${f.key}`])} className="mb-2">
-            <summary className="mb-2 cursor-pointer text-sm font-semibold">Features</summary>
+            <summary className="mb-2 cursor-pointer text-sm font-semibold">{t.features}</summary>
             {specFilters.map((f) => (
-              <Field key={f.key} label={f.label} htmlFor={`f-${f.key}`}>
+              <Field key={f.key} label={ct.spec(f.label)} htmlFor={`f-${f.key}`}>
                 <Input
                   id={`f-${f.key}`}
                   type="number"
@@ -202,15 +298,13 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
               </Field>
             ))}
           </details>
-          <Small className="mb-3">
-            Lists update as you change them; press Search for text and number fields.
-          </Small>
+          <Small className="mb-3">{t.liveHint}</Small>
           <div className="flex gap-2">
             <Button type="submit" variant="primary">
-              Search
+              {c.search}
             </Button>
             <Link href="/catalog" className={buttonVariants()} onClick={() => setFilters({})}>
-              Reset
+              {c.reset}
             </Link>
           </div>
         </form>
@@ -222,11 +316,11 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
                 return (
                   <EmptyState
                     image="/img/empty-search.svg"
-                    title="No machine matches these filters"
-                    description="Try removing a filter, or describe the job and let the assistant pick the machines."
+                    title={t.noMatch}
+                    description={t.noMatchHint}
                     action={
                       <Link href="/assistant" className={buttonVariants()}>
-                        Describe your job to the assistant
+                        {t.askAssistant}
                       </Link>
                     }
                   />
@@ -242,28 +336,26 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
                 <>
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <Small>
-                      <b className="text-foreground">{data.results.length}</b> models · prices
-                      excluding VAT
-                      {days ? ` · estimates for ${days} calendar days` : ""}
+                      <b className="text-foreground">{data.results.length}</b>{" "}
+                      {t.summary(data.results.length, days)}
                     </Small>
                     <label className="text-muted-foreground flex items-center gap-2 text-sm">
-                      Sort by
+                      {t.sortBy}
                       <Select
                         className="min-h-9 w-auto py-1"
                         value={query.sort ?? ""}
                         onChange={(e) => apply({ ...filters, sort: e.target.value })}
                         options={[
-                          ["", "Category"],
-                          ["price", "Lowest daily price"],
-                          ["price_desc", "Highest daily price"],
+                          ["", t.sortCategory],
+                          ["price", t.sortLowest],
+                          ["price_desc", t.sortHighest],
                         ]}
                       />
                     </label>
                   </div>
                   {!days && (
                     <Alert tone="info" size="sm" className="mb-4">
-                      Add your <b>rental dates</b> in the filters to see what each machine would
-                      cost for your period.
+                      {t.addDates(bold)}
                     </Alert>
                   )}
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -289,9 +381,7 @@ export function CatalogView({ query }: { query: CatalogQuery }) {
                       )
                     })}
                   </div>
-                  <Small className="text-faint mt-4">
-                    Prices excluding VAT. Availability is always confirmed by the rental company.
-                  </Small>
+                  <Small className="text-faint mt-4">{c.pricesExclVat}</Small>
                 </>
               )
             }}

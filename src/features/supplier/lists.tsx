@@ -26,9 +26,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { api, downloadFile } from "@/lib/machina/api"
-import { date, eur, pct } from "@/lib/machina/format"
+import { useFormat, useMessages } from "@/i18n/client"
+import { defineMessages, plural } from "@/i18n/messages"
 import { useMe } from "@/lib/machina/hooks"
-import { CHANGE_KIND, CHARGE_KIND, DOC_TYPE } from "@/lib/machina/labels"
+import { useLabels } from "@/lib/machina/labels"
 import type {
   CommissionReport,
   Order,
@@ -41,6 +42,178 @@ import { cn } from "@/lib/utils"
 
 type OrderWithSummary = Order & { summary: OrderSummary }
 
+const M = defineMessages({
+  en: {
+    newRequests: (n: number) =>
+      `${n} new ${plural(n, "request is", "requests are")} waiting for your quote.`,
+    noNewRequests: "No new requests right now. Keep your prices up to date to win the next one.",
+    reviewRequests: "Review requests",
+    addMachine: "Add a machine",
+    requestsToReview: "Requests to review",
+    awaitingCustomer: "Quotes awaiting the customer",
+    activeOrders: "Active orders",
+    openChanges: "Open changes",
+    disputedCharges: "Disputed charges",
+    noInvoice: "Orders without an uploaded invoice",
+    toDo: "To do",
+    machinesInCatalog: (n: number) =>
+      `Machines in your catalogue: ${n}. Integration with rental management software is not available yet.`,
+    tabs: {
+      review: "To review",
+      sent: "Sent to customer",
+      accepted: "Accepted",
+      closed: "Declined / expired",
+    } as Record<string, string>,
+    quotesTitle: "Requests and quotes",
+    quotesIntro: "You only see the lines of a request that concern your machines.",
+    quote: "Quote",
+    customer: "Customer",
+    site: "Site",
+    period: "Period",
+    machines: "Machines",
+    status: "Status",
+    net: "Net",
+    expires: (d: string) => `expires ${d}`,
+    partial: "partial",
+    noQuotes: "No quotes in this section.",
+    ordersTitle: "Orders",
+    order: "Order",
+    payment: "Payment",
+    invoice: "Invoice",
+    agreedTotal: "Agreed total",
+    uploaded: "uploaded",
+    toUpload: "to upload",
+    noOrdersYet: "No orders yet.",
+    changesTitle: "Rental changes",
+    changesIntro:
+      "Extensions, added accessories and services, extra charges. To propose a change, open the order.",
+    toPrice: "to price",
+    chargeType: (kind: string) => `Charge: ${kind}`,
+    noChanges: "No changes.",
+    code: "Code",
+    type: "Type",
+    description: "Description",
+    amount: "Amount",
+    documentsTitle: "Documents and draft invoices",
+    documentsIntro:
+      "Machina generates a non-tax draft for every confirmed order. Issue the invoice with your own software and upload it to the order: uploading is not a submission to the SdI.",
+    taxToHandle: (code: string) => `${code} — tax document to handle`,
+    draft: "Draft",
+    uploadedDocs: "Uploaded documents",
+    uploadInvoice: "Upload invoice →",
+    planUpdated: "Plan updated",
+    commissionsTitle: "Machina commissions and plan",
+    hypothetical: "Hypothetical values",
+    hypotheticalNote: null as string | null,
+    machinaInvoicing:
+      "Machina will invoice the rental company for commissions and the subscription: Machina invoicing is not implemented yet.",
+    planName: (name: string) => `${name} plan`,
+    planDescriptions: {} as Record<string, string>,
+    active: "active",
+    changePlanTitle: "Change plan?",
+    changePlanBody: "The new plan applies immediately.",
+    changePlan: "Change plan",
+    switchPlan: "Switch to this plan",
+    monthlyFee: "Monthly fee",
+    commission: "Commission",
+    ofConfirmed: (rate: string) => `${rate} of confirmed orders`,
+    perOrder: "Estimated commission per order",
+    base: "Base: net of the accepted quote plus accepted changes (charges for damage, fuel and cleaning excluded).",
+    date: "Date",
+    baseCol: "Base",
+    rate: "Rate",
+    totalCommission: "Total estimated commission (excl. VAT)",
+    noConfirmed: "No confirmed orders.",
+  },
+  it: {
+    newRequests: (n: number) =>
+      `${n} ${plural(n, "nuova richiesta attende", "nuove richieste attendono")} il tuo preventivo.`,
+    noNewRequests:
+      "Nessuna nuova richiesta al momento. Tieni aggiornati i prezzi per aggiudicarti la prossima.",
+    reviewRequests: "Valuta le richieste",
+    addMachine: "Aggiungi una macchina",
+    requestsToReview: "Richieste da valutare",
+    awaitingCustomer: "Preventivi in attesa del cliente",
+    activeOrders: "Ordini attivi",
+    openChanges: "Modifiche aperte",
+    disputedCharges: "Addebiti contestati",
+    noInvoice: "Ordini senza fattura caricata",
+    toDo: "Da fare",
+    machinesInCatalog: (n: number) =>
+      `Macchine nel tuo catalogo: ${n}. L'integrazione con i gestionali di noleggio non è ancora disponibile.`,
+    tabs: {
+      review: "Da valutare",
+      sent: "Inviati al cliente",
+      accepted: "Accettati",
+      closed: "Rifiutati / scaduti",
+    } as Record<string, string>,
+    quotesTitle: "Richieste e preventivi",
+    quotesIntro: "Vedi solo le righe di una richiesta che riguardano le tue macchine.",
+    quote: "Preventivo",
+    customer: "Cliente",
+    site: "Cantiere",
+    period: "Periodo",
+    machines: "Macchine",
+    status: "Stato",
+    net: "Imponibile",
+    expires: (d: string) => `scade il ${d}`,
+    partial: "parziale",
+    noQuotes: "Nessun preventivo in questa sezione.",
+    ordersTitle: "Ordini",
+    order: "Ordine",
+    payment: "Pagamento",
+    invoice: "Fattura",
+    agreedTotal: "Totale concordato",
+    uploaded: "caricata",
+    toUpload: "da caricare",
+    noOrdersYet: "Ancora nessun ordine.",
+    changesTitle: "Modifiche ai noleggi",
+    changesIntro:
+      "Proroghe, accessori e servizi aggiunti, addebiti extra. Per proporre una modifica, apri l'ordine.",
+    toPrice: "da quotare",
+    chargeType: (kind: string) => `Addebito: ${kind}`,
+    noChanges: "Nessuna modifica.",
+    code: "Codice",
+    type: "Tipo",
+    description: "Descrizione",
+    amount: "Importo",
+    documentsTitle: "Documenti e bozze di fattura",
+    documentsIntro:
+      "Machina genera una bozza senza valore fiscale per ogni ordine confermato. Emetti la fattura con il tuo gestionale e caricala sull'ordine: il caricamento non è un invio allo SdI.",
+    taxToHandle: (code: string) => `${code} — documento fiscale da gestire`,
+    draft: "Bozza",
+    uploadedDocs: "Documenti caricati",
+    uploadInvoice: "Carica la fattura →",
+    planUpdated: "Piano aggiornato",
+    commissionsTitle: "Commissioni Machina e piano",
+    hypothetical: "Valori ipotetici",
+    hypotheticalNote:
+      "Ipotesi dimostrative: percentuali e canoni non sono decisioni commerciali definitive.",
+    machinaInvoicing:
+      "Machina fatturerà al noleggiatore commissioni e abbonamento: la fatturazione Machina non è ancora implementata.",
+    planName: (name: string) => `Piano ${name}`,
+    planDescriptions: {
+      base: "Nessun canone mensile, commissione sugli ordini confermati.",
+      pro: "Canone mensile, commissione ridotta.",
+    } as Record<string, string>,
+    active: "attivo",
+    changePlanTitle: "Cambiare piano?",
+    changePlanBody: "Il nuovo piano si applica subito.",
+    changePlan: "Cambia piano",
+    switchPlan: "Passa a questo piano",
+    monthlyFee: "Canone mensile",
+    commission: "Commissione",
+    ofConfirmed: (rate: string) => `${rate} degli ordini confermati`,
+    perOrder: "Commissione stimata per ordine",
+    base: "Base: imponibile del preventivo accettato più le modifiche accettate (esclusi gli addebiti per danni, carburante e pulizia).",
+    date: "Data",
+    baseCol: "Base",
+    rate: "Aliquota",
+    totalCommission: "Totale commissioni stimate (IVA esclusa)",
+    noConfirmed: "Nessun ordine confermato.",
+  },
+})
+
 function useSupplierOrders() {
   return useQuery({
     queryKey: ["supplier", "orders"],
@@ -49,6 +222,7 @@ function useSupplierOrders() {
 }
 
 export function SupplierOverview() {
+  const t = useMessages(M)
   const me = useMe().data
   const summary = useSupplierSummary()
   return (
@@ -58,18 +232,14 @@ export function SupplierOverview() {
           <WelcomeBanner
             name={me?.user.name}
             org={me?.org?.name}
-            subtitle={
-              s.counts.newRequests
-                ? `${s.counts.newRequests} new request${s.counts.newRequests === 1 ? " is" : "s are"} waiting for your quote.`
-                : "No new requests right now. Keep your prices up to date to win the next one."
-            }
+            subtitle={s.counts.newRequests ? t.newRequests(s.counts.newRequests) : t.noNewRequests}
             actions={
               <>
                 <Link href="/supplier/quotes" className={buttonVariants({ variant: "primary" })}>
-                  Review requests
+                  {t.reviewRequests}
                 </Link>
                 <Link href="/supplier/equipment/new" className={buttonVariants()}>
-                  Add a machine
+                  {t.addMachine}
                 </Link>
               </>
             }
@@ -77,81 +247,77 @@ export function SupplierOverview() {
           <StatGrid>
             <Stat
               n={s.counts.newRequests}
-              label="Requests to review"
+              label={t.requestsToReview}
               href="/supplier/quotes"
               icon={Inbox}
               hot
             />
             <Stat
               n={s.counts.awaitingClient}
-              label="Quotes awaiting the customer"
+              label={t.awaitingCustomer}
               href="/supplier/quotes?tab=sent"
               icon={Send}
             />
             <Stat
               n={s.counts.activeOrders}
-              label="Active orders"
+              label={t.activeOrders}
               href="/supplier/orders"
               icon={Truck}
             />
             <Stat
               n={s.counts.changesOpen}
-              label="Open changes"
+              label={t.openChanges}
               href="/supplier/changes"
               icon={GitPullRequestArrow}
               hot
             />
             <Stat
               n={s.counts.chargesContested}
-              label="Disputed charges"
+              label={t.disputedCharges}
               href="/supplier/changes"
               icon={TriangleAlert}
               hot
             />
             <Stat
               n={s.counts.invoicesMissing}
-              label="Orders without an uploaded invoice"
+              label={t.noInvoice}
               href="/supplier/documents"
               icon={FileWarning}
             />
           </StatGrid>
           <Card>
-            <PanelTitle icon={ListChecks}>To do</PanelTitle>
+            <PanelTitle icon={ListChecks}>{t.toDo}</PanelTitle>
             <ActionList actions={s.actions} />
           </Card>
-          <Small className="mt-3">
-            Machines in your catalogue: {s.counts.offers}. Integration with rental management
-            software is not available yet.
-          </Small>
+          <Small className="mt-3">{t.machinesInCatalog(s.counts.offers)}</Small>
         </>
       )}
     </QueryView>
   )
 }
 
-const TABS: { id: string; label: string; statuses: QuoteStatus[] }[] = [
-  { id: "review", label: "To review", statuses: ["awaiting_partner"] },
-  { id: "sent", label: "Sent to customer", statuses: ["sent"] },
-  { id: "accepted", label: "Accepted", statuses: ["accepted"] },
+const TABS: { id: string; statuses: QuoteStatus[] }[] = [
+  { id: "review", statuses: ["awaiting_partner"] },
+  { id: "sent", statuses: ["sent"] },
+  { id: "accepted", statuses: ["accepted"] },
   {
     id: "closed",
-    label: "Declined / expired",
     statuses: ["declined_by_partner", "rejected_by_client", "expired", "withdrawn"],
   },
 ]
 
 export function SupplierQuotes({ tab }: { tab?: string }) {
+  const t = useMessages(M)
+  const { date, eur } = useFormat()
   const router = useRouter()
-  const active = TABS.find((t) => t.id === tab) ?? TABS[0]
+  const active = TABS.find((x) => x.id === tab) ?? TABS[0]
   const q = useQuery({
     queryKey: ["supplier", "quotes"],
     queryFn: () => api.get<{ quotes: Quote[] }>("/api/partner/quotes"),
   })
   return (
     <>
-      <PageHead title="Requests and quotes">
-        You only see the lines of a request that concern your machines.
-      </PageHead>
+      <PageHead title={t.quotesTitle}>{t.quotesIntro}</PageHead>
       <QueryView query={q}>
         {({ quotes }) => {
           const list = quotes.filter((x) => active.statuses.includes(x.status))
@@ -161,19 +327,19 @@ export function SupplierQuotes({ tab }: { tab?: string }) {
                 className="bg-muted mb-5 inline-flex flex-wrap gap-1 rounded-xl p-1"
                 role="tablist"
               >
-                {TABS.map((t) => (
+                {TABS.map((tb) => (
                   <Link
-                    key={t.id}
-                    href={`/supplier/quotes?tab=${t.id}`}
+                    key={tb.id}
+                    href={`/supplier/quotes?tab=${tb.id}`}
                     role="tab"
-                    aria-selected={t === active}
+                    aria-selected={tb === active}
                     className={cn(
                       "text-muted-foreground hover:text-foreground rounded-lg px-3.5 py-2 text-[0.92rem] no-underline hover:no-underline",
-                      t === active &&
+                      tb === active &&
                         "text-foreground bg-white font-semibold shadow-[0_1px_3px_rgb(20_18_14/0.12)]"
                     )}
                   >
-                    {t.label} ({quotes.filter((x) => t.statuses.includes(x.status)).length})
+                    {t.tabs[tb.id]} ({quotes.filter((x) => tb.statuses.includes(x.status)).length})
                   </Link>
                 ))}
               </div>
@@ -181,13 +347,13 @@ export function SupplierQuotes({ tab }: { tab?: string }) {
                 <TableWrap>
                   <thead>
                     <tr>
-                      <th>Quote</th>
-                      <th>Customer</th>
-                      <th>Site</th>
-                      <th>Period</th>
-                      <th>Machines</th>
-                      <th>Status</th>
-                      <th className="num">Net</th>
+                      <th>{t.quote}</th>
+                      <th>{t.customer}</th>
+                      <th>{t.site}</th>
+                      <th>{t.period}</th>
+                      <th>{t.machines}</th>
+                      <th>{t.status}</th>
+                      <th className="num">{t.net}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -219,12 +385,12 @@ export function SupplierQuotes({ tab }: { tab?: string }) {
                           <td>
                             <StatusBadge kind="quote" status={x.status} forPartner />
                             {x.status === "sent" && v.validUntil && (
-                              <Small>expires {date(v.validUntil)}</Small>
+                              <Small>{t.expires(date(v.validUntil))}</Small>
                             )}
                           </td>
                           <td className="num">
                             {eur(v.totals.net)}{" "}
-                            {!v.totals.complete && <Badge tone="warn">partial</Badge>}
+                            {!v.totals.complete && <Badge tone="warn">{t.partial}</Badge>}
                           </td>
                         </tr>
                       )
@@ -232,7 +398,7 @@ export function SupplierQuotes({ tab }: { tab?: string }) {
                   </tbody>
                 </TableWrap>
               ) : (
-                <EmptyState title="No quotes in this section." />
+                <EmptyState title={t.noQuotes} />
               )}
             </>
           )
@@ -243,25 +409,27 @@ export function SupplierQuotes({ tab }: { tab?: string }) {
 }
 
 export function SupplierOrders() {
+  const t = useMessages(M)
+  const { date, eur } = useFormat()
   const router = useRouter()
   const q = useSupplierOrders()
   return (
     <>
-      <PageHead title="Orders" />
+      <PageHead title={t.ordersTitle} />
       <QueryView query={q}>
         {({ orders }) =>
           orders.length ? (
             <TableWrap>
               <thead>
                 <tr>
-                  <th>Order</th>
-                  <th>Customer</th>
-                  <th>Machines</th>
-                  <th>Period</th>
-                  <th>Status</th>
-                  <th>Payment</th>
-                  <th>Invoice</th>
-                  <th className="num">Agreed total</th>
+                  <th>{t.order}</th>
+                  <th>{t.customer}</th>
+                  <th>{t.machines}</th>
+                  <th>{t.period}</th>
+                  <th>{t.status}</th>
+                  <th>{t.payment}</th>
+                  <th>{t.invoice}</th>
+                  <th className="num">{t.agreedTotal}</th>
                 </tr>
               </thead>
               <tbody>
@@ -292,9 +460,9 @@ export function SupplierOrders() {
                     </td>
                     <td>
                       {o.invoices.length ? (
-                        <Badge tone="ok">uploaded</Badge>
+                        <Badge tone="ok">{t.uploaded}</Badge>
                       ) : (
-                        <Badge>to upload</Badge>
+                        <Badge>{t.toUpload}</Badge>
                       )}
                     </td>
                     <td className="num">{eur(o.summary.agreedGross)}</td>
@@ -303,7 +471,7 @@ export function SupplierOrders() {
               </tbody>
             </TableWrap>
           ) : (
-            <EmptyState title="No orders yet." />
+            <EmptyState title={t.noOrdersYet} />
           )
         }
       </QueryView>
@@ -312,14 +480,14 @@ export function SupplierOrders() {
 }
 
 export function SupplierChanges() {
+  const t = useMessages(M)
+  const L = useLabels()
+  const { eur } = useFormat()
   const router = useRouter()
   const q = useSupplierOrders()
   return (
     <>
-      <PageHead title="Rental changes">
-        Extensions, added accessories and services, extra charges. To propose a change, open the
-        order.
-      </PageHead>
+      <PageHead title={t.changesTitle}>{t.changesIntro}</PageHead>
       <QueryView query={q}>
         {({ orders }) => {
           const rows = orders
@@ -330,9 +498,9 @@ export function SupplierChanges() {
                 code: x.code,
                 createdAt: x.createdAt,
                 open: x.status === "requested_by_client" || x.status === "pending_approval",
-                type: CHANGE_KIND[x.kind],
+                type: L.CHANGE_KIND[x.kind],
                 description: x.reason,
-                amount: x.line ? eur(x.line.amount) : <Badge tone="warn">to price</Badge>,
+                amount: x.line ? eur(x.line.amount) : <Badge tone="warn">{t.toPrice}</Badge>,
                 badge: <StatusBadge kind="change" status={x.status} />,
               })),
               ...o.charges.map((x) => ({
@@ -341,7 +509,7 @@ export function SupplierChanges() {
                 code: x.code,
                 createdAt: x.createdAt,
                 open: x.status === "disputed" || x.status === "pending_review",
-                type: `Charge: ${CHARGE_KIND[x.kind]}`,
+                type: t.chargeType(L.CHARGE_KIND[x.kind]),
                 description: x.description,
                 amount: eur(x.amount),
                 badge: <StatusBadge kind="charge" status={x.status} />,
@@ -350,17 +518,17 @@ export function SupplierChanges() {
             .sort(
               (a, b) => Number(b.open) - Number(a.open) || b.createdAt.localeCompare(a.createdAt)
             )
-          if (!rows.length) return <EmptyState title="No changes." />
+          if (!rows.length) return <EmptyState title={t.noChanges} />
           return (
             <TableWrap>
               <thead>
                 <tr>
-                  <th>Code</th>
-                  <th>Order</th>
-                  <th>Type</th>
-                  <th>Description</th>
-                  <th className="num">Amount</th>
-                  <th>Status</th>
+                  <th>{t.code}</th>
+                  <th>{t.order}</th>
+                  <th>{t.type}</th>
+                  <th>{t.description}</th>
+                  <th className="num">{t.amount}</th>
+                  <th>{t.status}</th>
                 </tr>
               </thead>
               <tbody>
@@ -395,16 +563,16 @@ export function SupplierChanges() {
 }
 
 export function SupplierDocuments() {
+  const t = useMessages(M)
+  const L = useLabels()
+  const { eur } = useFormat()
   const q = useQuery({
     queryKey: ["supplier", "documents"],
     queryFn: () => api.get<{ documents: PartnerDocument[] }>("/api/partner/documents"),
   })
   return (
     <>
-      <PageHead title="Documents and draft invoices">
-        Machina generates a non-tax draft for every confirmed order. Issue the invoice with your own
-        software and upload it to the order: uploading is not a submission to the SdI.
-      </PageHead>
+      <PageHead title={t.documentsTitle}>{t.documentsIntro}</PageHead>
       <QueryView query={q}>
         {({ documents }) => (
           <>
@@ -415,7 +583,7 @@ export function SupplierDocuments() {
                   tone="warn"
                   size="sm"
                   className="mb-2"
-                  title={`${d.code} — tax document to handle`}
+                  title={t.taxToHandle(d.code)}
                 >
                   {n.text}
                 </Alert>
@@ -425,12 +593,12 @@ export function SupplierDocuments() {
               <TableWrap>
                 <thead>
                   <tr>
-                    <th>Order</th>
-                    <th>Customer</th>
-                    <th>Draft</th>
-                    <th>Uploaded documents</th>
-                    <th>Payment</th>
-                    <th className="num">Agreed total</th>
+                    <th>{t.order}</th>
+                    <th>{t.customer}</th>
+                    <th>{t.draft}</th>
+                    <th>{t.uploadedDocs}</th>
+                    <th>{t.payment}</th>
+                    <th className="num">{t.agreedTotal}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -447,7 +615,7 @@ export function SupplierDocuments() {
                           href={`/supplier/orders/${d.orderId}/draft-invoice`}
                           className={buttonVariants({ size: "sm" })}
                         >
-                          Draft
+                          {t.draft}
                         </Link>
                       </td>
                       <td>
@@ -463,12 +631,12 @@ export function SupplierDocuments() {
                                 )
                               }
                             >
-                              {DOC_TYPE[i.docType]} {i.number}
+                              {L.DOC_TYPE[i.docType]} {i.number}
                             </Button>
                           ))
                         ) : (
                           <Link href={`/supplier/orders/${d.orderId}`} className="text-sm">
-                            Upload invoice →
+                            {t.uploadInvoice}
                           </Link>
                         )}
                       </td>
@@ -481,7 +649,7 @@ export function SupplierDocuments() {
                 </tbody>
               </TableWrap>
             ) : (
-              <EmptyState title="No orders yet." />
+              <EmptyState title={t.noOrdersYet} />
             )}
           </>
         )}
@@ -491,6 +659,8 @@ export function SupplierDocuments() {
 }
 
 export function SupplierCommissions() {
+  const t = useMessages(M)
+  const { date, eur, pct } = useFormat()
   const qc = useQueryClient()
   const confirm = useConfirm()
   const q = useQuery({
@@ -500,73 +670,69 @@ export function SupplierCommissions() {
   const change = useMutation({
     mutationFn: (planId: string) => api.put("/api/partner/plan", { planId }),
     onSuccess: () => {
-      toast.success("Plan updated")
+      toast.success(t.planUpdated)
       void qc.invalidateQueries({ queryKey: ["supplier", "commissions"] })
     },
   })
   return (
     <>
-      <PageHead title="Machina commissions and plan" />
+      <PageHead title={t.commissionsTitle} />
       <QueryView query={q}>
         {(r) => (
           <>
-            <Alert tone="warn" className="mb-4" title="Hypothetical values">
-              {r.note} Machina will invoice the rental company for commissions and the subscription:
-              Machina invoicing is not implemented yet.
+            <Alert tone="warn" className="mb-4" title={t.hypothetical}>
+              {t.hypotheticalNote ?? r.note} {t.machinaInvoicing}
             </Alert>
             <div className="mb-4 grid gap-4 md:grid-cols-2">
               {r.plans.map((p) => (
                 <Card key={p.id} flat={p.id !== r.plan.id}>
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="m-0">{p.name} plan</h3>
+                    <h3 className="m-0">{t.planName(p.name)}</h3>
                     {p.id === r.plan.id ? (
-                      <Badge tone="ok">active</Badge>
+                      <Badge tone="ok">{t.active}</Badge>
                     ) : (
                       <Button
                         size="sm"
                         onClick={async () => {
                           if (
                             await confirm({
-                              title: "Change plan?",
-                              body: "The new plan applies immediately.",
-                              confirmLabel: "Change plan",
+                              title: t.changePlanTitle,
+                              body: t.changePlanBody,
+                              confirmLabel: t.changePlan,
                             })
                           ) {
                             change.mutate(p.id)
                           }
                         }}
                       >
-                        Switch to this plan
+                        {t.switchPlan}
                       </Button>
                     )}
                   </div>
-                  <Small className="my-2">{p.description}</Small>
+                  <Small className="my-2">{t.planDescriptions[p.id] ?? p.description}</Small>
                   <dl className="grid grid-cols-[140px_1fr] gap-1 text-sm">
-                    <dt className="text-muted-foreground">Monthly fee</dt>
+                    <dt className="text-muted-foreground">{t.monthlyFee}</dt>
                     <dd className="m-0 font-medium">{eur(p.monthly)}</dd>
-                    <dt className="text-muted-foreground">Commission</dt>
-                    <dd className="m-0 font-medium">{pct(p.commissionRate)} of confirmed orders</dd>
+                    <dt className="text-muted-foreground">{t.commission}</dt>
+                    <dd className="m-0 font-medium">{t.ofConfirmed(pct(p.commissionRate))}</dd>
                   </dl>
                 </Card>
               ))}
             </div>
             <Card>
-              <h3>Estimated commission per order</h3>
-              <Small className="mb-3">
-                Base: net of the accepted quote plus accepted changes (charges for damage, fuel and
-                cleaning excluded).
-              </Small>
+              <h3>{t.perOrder}</h3>
+              <Small className="mb-3">{t.base}</Small>
               {r.rows.length ? (
                 <TableWrap>
                   <thead>
                     <tr>
-                      <th>Order</th>
-                      <th>Customer</th>
-                      <th>Date</th>
-                      <th>Status</th>
-                      <th className="num">Base</th>
-                      <th className="num">Rate</th>
-                      <th className="num">Commission</th>
+                      <th>{t.order}</th>
+                      <th>{t.customer}</th>
+                      <th>{t.date}</th>
+                      <th>{t.status}</th>
+                      <th className="num">{t.baseCol}</th>
+                      <th className="num">{t.rate}</th>
+                      <th className="num">{t.commission}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -586,13 +752,13 @@ export function SupplierCommissions() {
                       </tr>
                     ))}
                     <tr className="font-bold">
-                      <td colSpan={6}>Total estimated commission (excl. VAT)</td>
+                      <td colSpan={6}>{t.totalCommission}</td>
                       <td className="num">{eur(r.totalCommission)}</td>
                     </tr>
                   </tbody>
                 </TableWrap>
               ) : (
-                <Small>No confirmed orders.</Small>
+                <Small>{t.noConfirmed}</Small>
               )}
             </Card>
           </>

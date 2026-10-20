@@ -1,12 +1,65 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
-import { date, dateTime, eur, stripDemo } from "@/lib/machina/format"
+import { useFormat, useMessages } from "@/i18n/client"
+import { defineMessages } from "@/i18n/messages"
+import { stripDemo } from "@/lib/machina/format"
 import type { HistoryEntry, Needs, Quote, SiteRef } from "@/lib/machina/types"
 
 import { KV, TableWrap } from "./bits"
 
+const M = defineMessages({
+  en: {
+    noEvents: "No events yet.",
+    site: "Site",
+    access: "Access",
+    ground: "Ground",
+    hours: "Hours / limits",
+    notes: "Notes",
+    job: "Job",
+    version: "Version",
+    authorDate: "Author and date",
+    validUntil: "Valid until",
+    net: "Net",
+    status: "Status",
+    draft: "Machina draft",
+    quote: "quote",
+    partial: "partial",
+    accepted: (at: string) => `accepted ${at}`,
+    current: "current",
+    replaced: "replaced",
+    acceptance: (v: number, by: string, at: string) =>
+      `Acceptance recorded: v${v} by ${by} on ${at}.`,
+  },
+  it: {
+    noEvents: "Nessun evento.",
+    site: "Cantiere",
+    access: "Accesso",
+    ground: "Terreno",
+    hours: "Orari / vincoli",
+    notes: "Note",
+    job: "Lavoro",
+    version: "Versione",
+    authorDate: "Autore e data",
+    validUntil: "Valido fino al",
+    net: "Imponibile",
+    status: "Stato",
+    draft: "Bozza Machina",
+    quote: "preventivo",
+    partial: "parziale",
+    accepted: (at: string) => `accettato ${at}`,
+    current: "attuale",
+    replaced: "sostituito",
+    acceptance: (v: number, by: string, at: string) =>
+      `Accettazione registrata: v${v} da ${by} il ${at}.`,
+  },
+})
+
 /** History, newest first. */
 export function Timeline({ entries }: { entries: HistoryEntry[] }) {
-  if (!entries.length) return <p className="text-muted-foreground text-sm">No events yet.</p>
+  const m = useMessages(M)
+  const { dateTime } = useFormat()
+  if (!entries.length) return <p className="text-muted-foreground text-sm">{m.noEvents}</p>
   return (
     <ol className="border-border m-0 list-none space-y-3 border-l-2 p-0 pl-4">
       {[...entries].reverse().map((h, i) => (
@@ -35,9 +88,10 @@ export function SiteBlock({
   needs?: Partial<Needs>
   job?: string
 }) {
+  const m = useMessages(M)
   const items: [string, React.ReactNode][] = [
     [
-      "Site",
+      m.site,
       <>
         {site.name}
         <div className="text-muted-foreground text-[0.85rem] font-normal">
@@ -46,13 +100,13 @@ export function SiteBlock({
       </>,
     ],
   ]
-  if (needs?.accessWidth) items.push(["Access", needs.accessWidth])
-  if (needs?.ground) items.push(["Ground", needs.ground])
-  if (needs?.schedule) items.push(["Hours / limits", needs.schedule])
-  if (needs?.notes) items.push(["Notes", needs.notes])
+  if (needs?.accessWidth) items.push([m.access, needs.accessWidth])
+  if (needs?.ground) items.push([m.ground, needs.ground])
+  if (needs?.schedule) items.push([m.hours, needs.schedule])
+  if (needs?.notes) items.push([m.notes, needs.notes])
   if (job)
     items.push([
-      "Job",
+      m.job,
       <span key="job" className="font-normal">
         {job}
       </span>,
@@ -62,16 +116,18 @@ export function SiteBlock({
 
 /** Quote versions with author, date, validity and status. */
 export function VersionsList({ quote: q }: { quote: Quote }) {
+  const m = useMessages(M)
+  const { date, dateTime, eur } = useFormat()
   return (
     <>
       <TableWrap>
         <thead>
           <tr>
-            <th>Version</th>
-            <th>Author and date</th>
-            <th>Valid until</th>
-            <th className="num">Net</th>
-            <th>Status</th>
+            <th>{m.version}</th>
+            <th>{m.authorDate}</th>
+            <th>{m.validUntil}</th>
+            <th className="num">{m.net}</th>
+            <th>{m.status}</th>
           </tr>
         </thead>
         <tbody>
@@ -80,9 +136,9 @@ export function VersionsList({ quote: q }: { quote: Quote }) {
               <td className="whitespace-nowrap">
                 <b>v{v.n}</b>{" "}
                 {v.kind === "draft" ? (
-                  <Badge>Machina draft</Badge>
+                  <Badge>{m.draft}</Badge>
                 ) : (
-                  <Badge tone="info">quote</Badge>
+                  <Badge tone="info">{m.quote}</Badge>
                 )}
               </td>
               <td>
@@ -93,15 +149,17 @@ export function VersionsList({ quote: q }: { quote: Quote }) {
               </td>
               <td className="whitespace-nowrap">{v.validUntil ? date(v.validUntil) : "—"}</td>
               <td className="num">
-                {eur(v.totals.net)} {!v.totals.complete && <Badge tone="warn">partial</Badge>}
+                {eur(v.totals.net)} {!v.totals.complete && <Badge tone="warn">{m.partial}</Badge>}
               </td>
               <td>
                 {q.acceptedVersion === v.n ? (
-                  <Badge tone="ok">accepted {q.acceptance ? dateTime(q.acceptance.at) : ""}</Badge>
+                  <Badge tone="ok">
+                    {m.accepted(q.acceptance ? dateTime(q.acceptance.at) : "")}
+                  </Badge>
                 ) : v.n === q.currentVersion ? (
-                  <Badge tone="accent">current</Badge>
+                  <Badge tone="accent">{m.current}</Badge>
                 ) : (
-                  <Badge>replaced</Badge>
+                  <Badge>{m.replaced}</Badge>
                 )}
               </td>
             </tr>
@@ -110,8 +168,7 @@ export function VersionsList({ quote: q }: { quote: Quote }) {
       </TableWrap>
       {q.acceptance && (
         <p className="text-muted-foreground mt-1.5 text-[0.85rem]">
-          Acceptance recorded: v{q.acceptance.version} by {q.acceptance.by} on{" "}
-          {dateTime(q.acceptance.at)}.
+          {m.acceptance(q.acceptance.version, q.acceptance.by, dateTime(q.acceptance.at))}
         </p>
       )}
     </>

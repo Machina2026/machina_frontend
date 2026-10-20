@@ -1,8 +1,7 @@
-import type { Metadata } from "next"
-
 import { InvoiceDraftView } from "@/features/orders/invoice-draft"
+import { pageMetadata } from "@/i18n/server"
 
-export const metadata: Metadata = { title: "Draft invoice" }
+export const generateMetadata = pageMetadata("draftInvoice")
 
 export default async function Page({ params }: PageProps<"/supplier/orders/[id]/draft-invoice">) {
   const { id } = await params

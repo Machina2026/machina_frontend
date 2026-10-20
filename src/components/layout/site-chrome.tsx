@@ -1,6 +1,12 @@
+"use client"
+
 import Link from "next/link"
 
+import { useMessages } from "@/i18n/client"
+
 import { Container } from "./container"
+import { LanguageSwitch } from "./language-switch"
+import { NAV } from "./nav-text"
 
 /** The "M" mark from the favicon, as an inline square. */
 export function LogoMark({ className = "size-9" }: { className?: string }) {
@@ -20,10 +26,11 @@ export function LogoMark({ className = "size-9" }: { className?: string }) {
 }
 
 export function Logo({ tone = "dark" }: { tone?: "dark" | "light" }) {
+  const t = useMessages(NAV)
   return (
     <Link
       href="/"
-      aria-label="Machina Rent, home"
+      aria-label={t.home}
       className={`flex items-center gap-2 no-underline hover:no-underline ${tone === "light" ? "text-white" : "text-foreground"}`}
     >
       <LogoMark className="size-8 shrink-0" />
@@ -35,47 +42,49 @@ export function Logo({ tone = "dark" }: { tone?: "dark" | "light" }) {
   )
 }
 
-const FOOTER_LINKS: [string, [string, string][]][] = [
+type NavKey = keyof (typeof NAV)["en"]
+
+const FOOTER_LINKS: [NavKey, [href: string, label: NavKey][]][] = [
   [
-    "Rent",
+    "footerRent",
     [
-      ["/catalog", "Catalogue"],
-      ["/assistant", "Describe your job"],
-      ["/accessories", "Accessories"],
-      ["/request", "Your request"],
+      ["/catalog", "catalog"],
+      ["/assistant", "describeJob"],
+      ["/accessories", "accessories"],
+      ["/request", "yourRequest"],
     ],
   ],
   [
-    "Partners",
+    "footerPartners",
     [
-      ["/become-a-partner", "Become a partner"],
-      ["/register?role=partner", "Register a rental company"],
-      ["/login", "Sign in"],
+      ["/become-a-partner", "becomePartner"],
+      ["/register?role=partner", "registerPartner"],
+      ["/login", "signIn"],
     ],
   ],
   [
-    "Machina",
+    "footerMachina",
     [
-      ["/legal/terms", "Terms"],
-      ["/legal/privacy", "Privacy"],
+      ["/legal/terms", "terms"],
+      ["/legal/privacy", "privacy"],
     ],
   ],
 ]
 
 export function SiteFooter() {
+  const t = useMessages(NAV)
   return (
     <footer className="no-print border-border bg-secondary mt-auto border-t">
       <Container className="grid gap-10 py-14 md:grid-cols-[1.5fr_repeat(3,1fr)]">
         <div>
           <Logo />
           <p className="text-muted-foreground mt-4 max-w-xs text-[0.92rem] leading-relaxed">
-            Construction equipment rental in Turin and Piedmont. One request, several rental
-            companies, every quote and order in one place.
+            {t.footerAbout}
           </p>
         </div>
         {FOOTER_LINKS.map(([title, links]) => (
-          <nav key={title} aria-label={title}>
-            <div className="mb-3 text-[0.92rem] font-semibold">{title}</div>
+          <nav key={title} aria-label={t[title]}>
+            <div className="mb-3 text-[0.92rem] font-semibold">{t[title]}</div>
             <ul className="m-0 list-none space-y-2.5 p-0">
               {links.map(([href, label]) => (
                 <li key={href}>
@@ -83,7 +92,7 @@ export function SiteFooter() {
                     href={href}
                     className="text-muted-foreground hover:text-foreground text-[0.92rem] no-underline hover:no-underline"
                   >
-                    {label}
+                    {t[label]}
                   </Link>
                 </li>
               ))}
@@ -92,9 +101,11 @@ export function SiteFooter() {
         ))}
       </Container>
       <div className="border-border border-t">
-        <Container className="text-muted-foreground flex flex-wrap justify-between gap-2 py-5 text-[0.84rem]">
-          <span>© {new Date().getFullYear()} Machina Rent</span>
-          <span>Prices shown exclude VAT</span>
+        <Container className="text-muted-foreground flex flex-wrap items-center justify-between gap-3 py-5 text-[0.84rem]">
+          <span>
+            © {new Date().getFullYear()} Machina Rent · {t.vatNote}
+          </span>
+          <LanguageSwitch />
         </Container>
       </div>
     </footer>

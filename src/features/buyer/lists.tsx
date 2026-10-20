@@ -25,12 +25,137 @@ import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { api, downloadFile } from "@/lib/machina/api"
-import { date, eur, stripDemo } from "@/lib/machina/format"
+import { useFormat, useMessages } from "@/i18n/client"
+import { defineMessages, plural } from "@/i18n/messages"
+import { stripDemo } from "@/lib/machina/format"
 import { useMe } from "@/lib/machina/hooks"
-import { CHANGE_KIND, CHARGE_KIND, DOC_TYPE } from "@/lib/machina/labels"
+import { useLabels } from "@/lib/machina/labels"
 import type { ClientDocument, Order, OrderSummary, RequestListItem } from "@/lib/machina/types"
 
 type OrderWithSummary = Order & { summary: OrderSummary }
+
+const M = defineMessages({
+  en: {
+    thingsToDo: (n: number) =>
+      `You have ${n} ${plural(n, "thing", "things")} to do. Everything else is on track.`,
+    nothingNeeded: "Nothing needs your attention right now.",
+    searchMachine: "Search for a machine",
+    describeJob: "Describe a job",
+    quotesToReview: "Quotes to review",
+    partsAwaiting: "Parts awaiting partners",
+    activeOrders: "Active orders",
+    changesToApprove: "Changes to approve",
+    chargesToReview: "Charges to review",
+    unpaidOrders: "Unpaid orders",
+    toDo: "To do",
+    allOrders: "All orders",
+    latestOrders: "Latest orders",
+    noOrders: "No orders.",
+    requestsTitle: "Requests and quotes",
+    newRequest: "New request",
+    requestsIntro:
+      "A request can involve several partners: each part has its own quote and status.",
+    request: "Request",
+    site: "Site",
+    period: "Period",
+    parts: "Parts",
+    overallStatus: "Overall status",
+    viaAssistant: " · assistant",
+    quoteToReview: "Quote to review",
+    noRequests: "You haven't sent any requests yet.",
+    ordersTitle: "Orders",
+    ordersIntro: "Order status and payment status are independent.",
+    order: "Order",
+    rentalCompany: "Rental company",
+    machines: "Machines",
+    status: "Status",
+    payment: "Payment",
+    agreedTotal: "Agreed total",
+    changeToApprove: "change to approve",
+    noOrdersYet: "No orders yet.",
+    ordersCreated: "Orders are created when you accept a quote.",
+    changesTitle: "Changes to approve",
+    changesIntro:
+      "Extensions, accessories and services proposed by rental companies, and extra charges to review. Only what you accept changes the agreed total.",
+    plusVat: "+ VAT",
+    nothingToApprove: "Nothing to approve",
+    nothingToApproveHint:
+      "Extensions, added services and extra charges from rental companies will appear here.",
+    waitingYou: "Waiting for you",
+    waitingYouHint: "Accept or reject: only what you accept changes the agreed total.",
+    waitingPartner: "Waiting for the rental company",
+    waitingPartnerHint: "Your requests to price and your disputed charges.",
+    reviewInOrder: "Review in order",
+    openOrder: "Open order",
+    documentsTitle: "Documents and invoices",
+    documentsIntro:
+      "Invoices are issued by the rental companies with their own software and uploaded to the order. Machina drafts have no tax value.",
+    draft: "Draft",
+    uploadedInvoices: "Uploaded invoices",
+    notUploaded: "Not uploaded yet",
+    noDocuments: "No documents.",
+  },
+  it: {
+    thingsToDo: (n: number) =>
+      `Hai ${n} ${plural(n, "cosa", "cose")} da fare. Il resto procede regolarmente.`,
+    nothingNeeded: "Al momento non c'è niente che richieda la tua attenzione.",
+    searchMachine: "Cerca una macchina",
+    describeJob: "Descrivi un lavoro",
+    quotesToReview: "Preventivi da valutare",
+    partsAwaiting: "Parti in attesa dei noleggiatori",
+    activeOrders: "Ordini attivi",
+    changesToApprove: "Modifiche da approvare",
+    chargesToReview: "Addebiti da verificare",
+    unpaidOrders: "Ordini da pagare",
+    toDo: "Da fare",
+    allOrders: "Tutti gli ordini",
+    latestOrders: "Ultimi ordini",
+    noOrders: "Nessun ordine.",
+    requestsTitle: "Richieste e preventivi",
+    newRequest: "Nuova richiesta",
+    requestsIntro:
+      "Una richiesta può coinvolgere più noleggiatori: ogni parte ha il proprio preventivo e il proprio stato.",
+    request: "Richiesta",
+    site: "Cantiere",
+    period: "Periodo",
+    parts: "Parti",
+    overallStatus: "Stato complessivo",
+    viaAssistant: " · assistente",
+    quoteToReview: "Preventivo da valutare",
+    noRequests: "Non hai ancora inviato richieste.",
+    ordersTitle: "Ordini",
+    ordersIntro: "Lo stato dell'ordine e lo stato del pagamento sono indipendenti.",
+    order: "Ordine",
+    rentalCompany: "Noleggiatore",
+    machines: "Macchine",
+    status: "Stato",
+    payment: "Pagamento",
+    agreedTotal: "Totale concordato",
+    changeToApprove: "modifica da approvare",
+    noOrdersYet: "Ancora nessun ordine.",
+    ordersCreated: "Gli ordini vengono creati quando accetti un preventivo.",
+    changesTitle: "Modifiche da approvare",
+    changesIntro:
+      "Proroghe, accessori e servizi proposti dai noleggiatori, e addebiti extra da verificare. Solo ciò che accetti cambia il totale concordato.",
+    plusVat: "+ IVA",
+    nothingToApprove: "Niente da approvare",
+    nothingToApproveHint:
+      "Qui compariranno proroghe, servizi aggiunti e addebiti extra dei noleggiatori.",
+    waitingYou: "In attesa di te",
+    waitingYouHint: "Accetta o rifiuta: solo ciò che accetti cambia il totale concordato.",
+    waitingPartner: "In attesa del noleggiatore",
+    waitingPartnerHint: "Le tue richieste da quotare e gli addebiti che hai contestato.",
+    reviewInOrder: "Valuta nell'ordine",
+    openOrder: "Apri l'ordine",
+    documentsTitle: "Documenti e fatture",
+    documentsIntro:
+      "Le fatture sono emesse dai noleggiatori con il proprio gestionale e caricate sull'ordine. Le bozze Machina non hanno valore fiscale.",
+    draft: "Bozza",
+    uploadedInvoices: "Fatture caricate",
+    notUploaded: "Non ancora caricata",
+    noDocuments: "Nessun documento.",
+  },
+})
 
 export function useBuyerOrders() {
   return useQuery({
@@ -40,6 +165,8 @@ export function useBuyerOrders() {
 }
 
 export function BuyerOverview() {
+  const t = useMessages(M)
+  const { date, eur } = useFormat()
   const me = useMe().data
   const summary = useBuyerSummary()
   return (
@@ -49,18 +176,14 @@ export function BuyerOverview() {
           <WelcomeBanner
             name={me?.user.name}
             org={me?.org?.name}
-            subtitle={
-              s.actions.length
-                ? `You have ${s.actions.length} thing${s.actions.length === 1 ? "" : "s"} to do. Everything else is on track.`
-                : "Nothing needs your attention right now."
-            }
+            subtitle={s.actions.length ? t.thingsToDo(s.actions.length) : t.nothingNeeded}
             actions={
               <>
                 <Link href="/catalog" className={buttonVariants({ variant: "primary" })}>
-                  Search for a machine
+                  {t.searchMachine}
                 </Link>
                 <Link href="/assistant" className={buttonVariants()}>
-                  Describe a job
+                  {t.describeJob}
                 </Link>
               </>
             }
@@ -68,47 +191,47 @@ export function BuyerOverview() {
           <StatGrid>
             <Stat
               n={s.counts.quotesToEvaluate}
-              label="Quotes to review"
+              label={t.quotesToReview}
               href="/buyer/requests"
               icon={MessageSquareQuote}
               hot
             />
             <Stat
               n={s.counts.waitingPartner}
-              label="Parts awaiting partners"
+              label={t.partsAwaiting}
               href="/buyer/requests"
               icon={Hourglass}
             />
             <Stat
               n={s.counts.activeOrders}
-              label="Active orders"
+              label={t.activeOrders}
               href="/buyer/orders"
               icon={Truck}
             />
             <Stat
               n={s.counts.changesToApprove}
-              label="Changes to approve"
+              label={t.changesToApprove}
               href="/buyer/changes"
               icon={ClipboardCheck}
               hot
             />
             <Stat
               n={s.counts.chargesToVerify}
-              label="Charges to review"
+              label={t.chargesToReview}
               href="/buyer/changes"
               icon={TriangleAlert}
               hot
             />
             <Stat
               n={s.counts.paymentsOpen}
-              label="Unpaid orders"
+              label={t.unpaidOrders}
               href="/buyer/documents"
               icon={Receipt}
             />
           </StatGrid>
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
-              <PanelTitle icon={ListChecks}>To do</PanelTitle>
+              <PanelTitle icon={ListChecks}>{t.toDo}</PanelTitle>
               <ActionList actions={s.actions} />
             </Card>
             <Card>
@@ -116,11 +239,11 @@ export function BuyerOverview() {
                 icon={Package}
                 aside={
                   <Link href="/buyer/orders" className="text-sm font-medium">
-                    All orders
+                    {t.allOrders}
                   </Link>
                 }
               >
-                Latest orders
+                {t.latestOrders}
               </PanelTitle>
               {s.recentOrders.length ? (
                 <div className="space-y-2">
@@ -144,7 +267,7 @@ export function BuyerOverview() {
                   ))}
                 </div>
               ) : (
-                <Small>No orders.</Small>
+                <Small>{t.noOrders}</Small>
               )}
             </Card>
           </div>
@@ -155,6 +278,8 @@ export function BuyerOverview() {
 }
 
 export function BuyerRequests() {
+  const t = useMessages(M)
+  const { date } = useFormat()
   const router = useRouter()
   const q = useQuery({
     queryKey: ["buyer", "requests"],
@@ -163,14 +288,14 @@ export function BuyerRequests() {
   return (
     <>
       <PageHead
-        title="Requests and quotes"
+        title={t.requestsTitle}
         actions={
           <Link href="/request" className={buttonVariants({ variant: "primary" })}>
-            New request
+            {t.newRequest}
           </Link>
         }
       >
-        A request can involve several partners: each part has its own quote and status.
+        {t.requestsIntro}
       </PageHead>
       <QueryView query={q}>
         {({ requests }) =>
@@ -178,11 +303,11 @@ export function BuyerRequests() {
             <TableWrap>
               <thead>
                 <tr>
-                  <th>Request</th>
-                  <th>Site</th>
-                  <th>Period</th>
-                  <th>Parts</th>
-                  <th>Overall status</th>
+                  <th>{t.request}</th>
+                  <th>{t.site}</th>
+                  <th>{t.period}</th>
+                  <th>{t.parts}</th>
+                  <th>{t.overallStatus}</th>
                 </tr>
               </thead>
               <tbody>
@@ -201,11 +326,11 @@ export function BuyerRequests() {
                       </Link>
                       <Small>
                         {date(r.createdAt)}
-                        {r.source === "assistant" && " · assistant"}
+                        {r.source === "assistant" && t.viaAssistant}
                       </Small>
                       {r.parts.some((p) => p.status === "sent") && (
                         <Badge tone="accent" className="mt-1.5">
-                          Quote to review
+                          {t.quoteToReview}
                         </Badge>
                       )}
                     </td>
@@ -231,10 +356,10 @@ export function BuyerRequests() {
           ) : (
             <EmptyState
               image="/img/empty-request.svg"
-              title="You haven't sent any requests yet."
+              title={t.noRequests}
               action={
                 <Link href="/catalog" className={buttonVariants({ variant: "primary" })}>
-                  Search for a machine
+                  {t.searchMachine}
                 </Link>
               }
             />
@@ -246,24 +371,26 @@ export function BuyerRequests() {
 }
 
 export function BuyerOrders() {
+  const t = useMessages(M)
+  const { date, eur } = useFormat()
   const router = useRouter()
   const q = useBuyerOrders()
   return (
     <>
-      <PageHead title="Orders">Order status and payment status are independent.</PageHead>
+      <PageHead title={t.ordersTitle}>{t.ordersIntro}</PageHead>
       <QueryView query={q}>
         {({ orders }) =>
           orders.length ? (
             <TableWrap>
               <thead>
                 <tr>
-                  <th>Order</th>
-                  <th>Rental company</th>
-                  <th>Machines</th>
-                  <th>Period</th>
-                  <th>Status</th>
-                  <th>Payment</th>
-                  <th className="num">Agreed total</th>
+                  <th>{t.order}</th>
+                  <th>{t.rentalCompany}</th>
+                  <th>{t.machines}</th>
+                  <th>{t.period}</th>
+                  <th>{t.status}</th>
+                  <th>{t.payment}</th>
+                  <th className="num">{t.agreedTotal}</th>
                 </tr>
               </thead>
               <tbody>
@@ -290,7 +417,7 @@ export function BuyerOrders() {
                       <StatusBadge kind="order" status={o.status} />
                       {o.changes.some((c) => c.status === "pending_approval") && (
                         <div className="mt-1">
-                          <Badge tone="accent">change to approve</Badge>
+                          <Badge tone="accent">{t.changeToApprove}</Badge>
                         </div>
                       )}
                     </td>
@@ -303,10 +430,7 @@ export function BuyerOrders() {
               </tbody>
             </TableWrap>
           ) : (
-            <EmptyState
-              title="No orders yet."
-              description="Orders are created when you accept a quote."
-            />
+            <EmptyState title={t.noOrdersYet} description={t.ordersCreated} />
           )
         }
       </QueryView>
@@ -315,13 +439,13 @@ export function BuyerOrders() {
 }
 
 export function BuyerChanges() {
+  const t = useMessages(M)
+  const L = useLabels()
+  const { eur } = useFormat()
   const q = useBuyerOrders()
   return (
     <>
-      <PageHead title="Changes to approve">
-        Extensions, accessories and services proposed by rental companies, and extra charges to
-        review. Only what you accept changes the agreed total.
-      </PageHead>
+      <PageHead title={t.changesTitle}>{t.changesIntro}</PageHead>
       <QueryView query={q}>
         {({ orders }) => {
           const items = orders.flatMap((o) => [
@@ -335,11 +459,14 @@ export function BuyerChanges() {
                 badge: <StatusBadge kind="change" status={c.status} />,
                 text: (
                   <>
-                    {CHANGE_KIND[c.kind]}: {c.reason}
+                    {L.CHANGE_KIND[c.kind]}: {c.reason}
                     {c.line && (
                       <>
                         {" "}
-                        — <b>{eur(c.line.amount)} + VAT</b>
+                        —{" "}
+                        <b>
+                          {eur(c.line.amount)} {t.plusVat}
+                        </b>
                       </>
                     )}
                   </>
@@ -355,29 +482,27 @@ export function BuyerChanges() {
                 badge: <StatusBadge kind="charge" status={c.status} />,
                 text: (
                   <>
-                    {CHARGE_KIND[c.kind]}: {c.description} — <b>{eur(c.amount)} + VAT</b>
+                    {L.CHARGE_KIND[c.kind]}: {c.description} —{" "}
+                    <b>
+                      {eur(c.amount)} {t.plusVat}
+                    </b>
                   </>
                 ),
               })),
           ])
           if (!items.length) {
-            return (
-              <EmptyState
-                title="Nothing to approve"
-                description="Extensions, added services and extra charges from rental companies will appear here."
-              />
-            )
+            return <EmptyState title={t.nothingToApprove} description={t.nothingToApproveHint} />
           }
           // Split what needs the customer's decision from what is back with the rental company.
           const groups = [
             {
-              title: "Waiting for you",
-              hint: "Accept or reject: only what you accept changes the agreed total.",
+              title: t.waitingYou,
+              hint: t.waitingYouHint,
               items: items.filter((i) => i.open),
             },
             {
-              title: "Waiting for the rental company",
-              hint: "Your requests to price and your disputed charges.",
+              title: t.waitingPartner,
+              hint: t.waitingPartnerHint,
               items: items.filter((i) => !i.open),
             },
           ].filter((g) => g.items.length)
@@ -413,7 +538,7 @@ export function BuyerChanges() {
                             variant: open ? "primary" : "default",
                           })}
                         >
-                          {open ? "Review in order" : "Open order"}
+                          {open ? t.reviewInOrder : t.openOrder}
                         </Link>
                       </Card>
                     ))}
@@ -429,28 +554,28 @@ export function BuyerChanges() {
 }
 
 export function BuyerDocuments() {
+  const t = useMessages(M)
+  const L = useLabels()
+  const { date, eur } = useFormat()
   const q = useQuery({
     queryKey: ["buyer", "documents"],
     queryFn: () => api.get<{ documents: ClientDocument[] }>("/api/client/documents"),
   })
   return (
     <>
-      <PageHead title="Documents and invoices">
-        Invoices are issued by the rental companies with their own software and uploaded to the
-        order. Machina drafts have no tax value.
-      </PageHead>
+      <PageHead title={t.documentsTitle}>{t.documentsIntro}</PageHead>
       <QueryView query={q}>
         {({ documents }) =>
           documents.length ? (
             <TableWrap>
               <thead>
                 <tr>
-                  <th>Order</th>
-                  <th>Rental company</th>
-                  <th>Draft</th>
-                  <th>Uploaded invoices</th>
-                  <th>Payment</th>
-                  <th className="num">Agreed total</th>
+                  <th>{t.order}</th>
+                  <th>{t.rentalCompany}</th>
+                  <th>{t.draft}</th>
+                  <th>{t.uploadedInvoices}</th>
+                  <th>{t.payment}</th>
+                  <th className="num">{t.agreedTotal}</th>
                 </tr>
               </thead>
               <tbody>
@@ -467,7 +592,7 @@ export function BuyerDocuments() {
                         href={`/buyer/orders/${d.orderId}/draft-invoice`}
                         className={buttonVariants({ size: "sm" })}
                       >
-                        Draft
+                        {t.draft}
                       </Link>
                     </td>
                     <td>
@@ -483,11 +608,11 @@ export function BuyerDocuments() {
                               )
                             }
                           >
-                            {DOC_TYPE[i.docType]} {i.number} ({date(i.date)})
+                            {L.DOC_TYPE[i.docType]} {i.number} ({date(i.date)})
                           </Button>
                         ))
                       ) : (
-                        <Small>Not uploaded yet</Small>
+                        <Small>{t.notUploaded}</Small>
                       )}
                     </td>
                     <td>
@@ -499,7 +624,7 @@ export function BuyerDocuments() {
               </tbody>
             </TableWrap>
           ) : (
-            <EmptyState title="No documents." />
+            <EmptyState title={t.noDocuments} />
           )
         }
       </QueryView>
