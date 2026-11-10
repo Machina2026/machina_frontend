@@ -45,7 +45,12 @@ export const CATEGORIES: Category[] = [
     subtypes: ["Tandem roller", "Single drum roller"],
     image: "/img/compaction_roller.png",
   },
-  { id: "cranes", name: "Mobile cranes", subtypes: ["Mobile crane"], image: "/img/mobile_crane.png" },
+  {
+    id: "cranes",
+    name: "Mobile cranes",
+    subtypes: ["Mobile crane"],
+    image: "/img/mobile_crane.png",
+  },
   {
     id: "generators",
     name: "Site generators",

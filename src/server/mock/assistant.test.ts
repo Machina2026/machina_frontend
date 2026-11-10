@@ -84,3 +84,74 @@ describe("runAssistant", () => {
     expect(r.mode).toBe("demo")
   })
 })
+
+describe("assistant in Italian", () => {
+  it("reads place, period, job and sizes from an Italian sentence", () => {
+    const s = parse(
+      "Devo scavare una trincea per la fognatura a Moncalieri da lunedì per 2 settimane, profonda 1,5 m, il cancello è largo 1,2 m",
+      emptyState(),
+      REF,
+      "it"
+    )
+    expect(s).toMatchObject({
+      location: "Moncalieri",
+      province: "TO",
+      from: "2030-06-10",
+      to: "2030-06-23",
+      depthM: 1.5,
+      accessWidthM: 1.2,
+    })
+    expect(s.jobs).toEqual(["dig"])
+  })
+
+  it("reads Italian dates, height, delivery and operator answers", () => {
+    const s = parse(
+      "Pulizia delle grondaie di un capannone a Torino dal 3 al 7 luglio, altezza 12 m, all'aperto. Sì, consegna e ritiro. No, nolo a freddo (senza operatore)",
+      emptyState(),
+      REF,
+      "it"
+    )
+    expect(s).toMatchObject({
+      location: "Torino",
+      from: "2030-07-03",
+      to: "2030-07-07",
+      heightM: 12,
+      indoor: false,
+      transport: true,
+      operator: false,
+    })
+    expect(s.jobs).toContain("height")
+  })
+
+  it("does not take Grugliasco for a crane job", () => {
+    const s = parse("Lavori a Grugliasco", emptyState(), REF, "it")
+    expect(s).toMatchObject({ location: "Grugliasco", jobs: [] })
+  })
+
+  it("answers in Italian with the steps it took and real offers", () => {
+    const store = new Store()
+    seed(store)
+    const r = runAssistant(
+      store,
+      "Scavo per fondazioni a Torino, profondità 1,5 m, passaggio 1,2 m, da domani per 5 giorni",
+      null,
+      "it",
+      REF
+    )
+    expect(r.steps.map((s) => s.kind)).toEqual(["read", "search", "offers", "dates", "check"])
+    expect(r.suggestions.find((s) => s.category === "excavators")?.modelId).toBe("m-kx019")
+    expect(r.reply).toMatch(/La scelta migliore è Kubota KX019-4/)
+    expect(r.summary[0]).toEqual({ label: "Luogo", value: "Torino (TO)" })
+    expect(r.questions.every((q) => /[àèéìòù]|\?/.test(q.text))).toBe(true)
+  })
+})
+
+describe("assistant answers in a few words", () => {
+  it.each([
+    ["Terreno piano, con consegna e operatore", "it", { transport: true, operator: true }],
+    ["Delivery and an operator please", "en", { transport: true, operator: true }],
+    ["No, nolo a freddo (senza operatore)", "it", { operator: false }],
+  ] as const)("%s", (text, locale, expected) => {
+    expect(parse(text, emptyState(), REF, locale)).toMatchObject(expected)
+  })
+})

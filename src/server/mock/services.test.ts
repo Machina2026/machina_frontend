@@ -102,7 +102,11 @@ describe("requestOverview", () => {
 describe("data separation", () => {
   const call = (userId: string, method: string, path: string) => {
     const body = { email: user(userId).email, password: DEMO_PASSWORD }
-    const { token } = dispatch({ store, token: null, body, query: {} }, "POST", "/api/auth/login") as SessionResult
+    const { token } = dispatch(
+      { store, token: null, body, query: {} },
+      "POST",
+      "/api/auth/login"
+    ) as SessionResult
     return dispatch({ store, token, body: {}, query: {} }, method, path)
   }
 

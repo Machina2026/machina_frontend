@@ -400,7 +400,8 @@ route("POST", "/api/estimate", null, ({ store, body: b }) => {
 route("POST", "/api/assistant", null, ({ store, body }) => {
   const msg = str(body.message).trim()
   if (!msg) throw new ApiError(400, "Write a message")
-  return runAssistant(store, msg.slice(0, 2000), (body.state ?? null) as never)
+  const locale = body.locale === "it" ? "it" : "en"
+  return runAssistant(store, msg.slice(0, 2000), (body.state ?? null) as never, locale)
 })
 
 route("GET", "/api/photos/([\\w-]+)", null, ({ store }, id) => {

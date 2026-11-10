@@ -1,6 +1,19 @@
 "use client"
 
-import { ArrowRight, SendHorizontal, Sparkles } from "lucide-react"
+import {
+  ArrowRight,
+  CalendarDays,
+  ChevronDown,
+  Check as CheckIcon,
+  Loader2,
+  MessageSquareText,
+  Scale,
+  Search,
+  SendHorizontal,
+  ShieldCheck,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
@@ -26,6 +39,7 @@ import type {
   AssistantQuestion,
   AssistantResult,
   AssistantState,
+  AssistantStep,
   AssistantSuggestion,
 } from "@/lib/machina/types"
 import { useHydrated } from "@/lib/machina/use-hydrated"
@@ -33,7 +47,12 @@ import { cn } from "@/lib/utils"
 
 import { ASSISTANT_SEED_KEY } from "./home"
 
-type Message = { role: "user" | "bot"; text: string; questions?: AssistantQuestion[] }
+type Message = {
+  role: "user" | "bot"
+  text: string
+  questions?: AssistantQuestion[]
+  steps?: AssistantStep[]
+}
 type Selection = { on: boolean; offerId: string; acc: string[] }
 type Conversation = {
   state: AssistantState | null
@@ -41,18 +60,41 @@ type Conversation = {
   result: AssistantResult | null
   selection: Record<number, Selection>
 }
+/** The newest answer being played back: steps shown so far, then words of the reply. */
+type Reveal = { index: number; steps: number; words: number; previous: AssistantResult | null }
 
 const KEY = "machina.assistant"
 const EMPTY: Conversation = { state: null, messages: [], result: null, selection: {} }
-/** The guided assistant reads English only (src/server/mock/assistant.ts), so its examples stay in English. */
-const EXAMPLES = [
-  "Digging foundations for a house in Chieri, 1.5 m deep, from Monday for 2 weeks",
-  "Gutter maintenance on a warehouse in Turin, height 12 m, outdoors, for 3 days from next week",
-  "Break up the paving and redo the sub-base in a courtyard in Turin, passage 1.5 m, for 2 weeks from Monday",
-]
+
+/** Pacing of the answer playback, in ms. */
+const THINK_MS = 700
+const STEP_MS = 650
+const WORDS_MS = 30
+const WORDS_PER_TICK = 3
+
+const STEP_ICONS: Record<AssistantStep["kind"], LucideIcon> = {
+  read: MessageSquareText,
+  search: Search,
+  offers: Scale,
+  dates: CalendarDays,
+  check: ShieldCheck,
+}
+
+const tokens = (text: string) => text.split(/(\s+)/)
+const reducedMotion = () =>
+  typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 const M = defineMessages({
   en: {
+    examples: [
+      "Digging foundations for a house in Chieri, 1.5 m deep, from Monday for 2 weeks",
+      "Gutter maintenance on a warehouse in Turin, height 12 m, outdoors, for 3 days from next week",
+      "Break up the paving and redo the sub-base in a courtyard in Turin, passage 1.5 m, for 2 weeks from Monday",
+    ],
+    thinking: "Thinking",
+    preview: "Preview",
+    stepsDone: (n: number) => `Worked through ${n} ${plural(n, "step", "steps")}`,
     cantAnswer: (err: string) => `I can't answer right now (${err}). Please try again.`,
     selectOne: "Select at least one machine",
     noLimit: "No limit",
@@ -62,21 +104,12 @@ const M = defineMessages({
     title: "Describe your job",
     newConversation: "New conversation",
     intro:
-      "Tell us what you need to do: the assistant asks for missing information and suggests machines from the catalogue.",
-    guidedTitle: "Guided assistant",
-    guidedBody:
-      "Replies follow predefined rules, not an AI model. Suggestions come from the catalogue; prices and availability come from the partners' offers.",
-    aiTitle: "AI assistant",
-    aiBody:
-      "Suggestions are limited to catalogue machines; prices and availability come from the partners' offers.",
-    englishOnly: null as string | null,
+      "Tell the assistant what you need to do, in your own words. It asks what's missing, searches the catalogue and compares the rental offers for you.",
     name: "Machina assistant",
-    guided: "Guided",
     online: "Online",
-    catalogOnly: "suggests catalogue machines only",
+    catalogOnly: "searches the catalogue and live offers",
     hello:
-      "Hi! Describe the job: what you need to do, where the site is and when. If you already know sizes, access or ground conditions, add them.",
-    typing: "The assistant is typing…",
+      "Hi! I'm the Machina assistant. Describe the job: what you need to do, where the site is and when. If you already know sizes, access or ground conditions, add them.",
     message: "Message",
     placeholder: "Write here… (Enter to send)",
     send: "Send",
@@ -108,6 +141,14 @@ const M = defineMessages({
       "Specs are indicative catalogue figures. Availability, final prices and technical suitability are confirmed by the partners and by the competent professional.",
   },
   it: {
+    examples: [
+      "Scavo per le fondazioni di una casa a Chieri, profondità 1,5 m, da lunedì per 2 settimane",
+      "Pulizia delle grondaie di un capannone a Torino, altezza 12 m, all'aperto, per 3 giorni dalla prossima settimana",
+      "Rompere la pavimentazione e rifare il sottofondo in un cortile a Torino, passaggio 1,5 m, per 2 settimane da lunedì",
+    ],
+    thinking: "Sto ragionando",
+    preview: "Anteprima",
+    stepsDone: (n: number) => `Ho svolto ${n} ${plural(n, "passaggio", "passaggi")}`,
     cantAnswer: (err: string) => `Non riesco a rispondere ora (${err}). Riprova.`,
     selectOne: "Seleziona almeno una macchina",
     noLimit: "Nessun limite",
@@ -118,22 +159,12 @@ const M = defineMessages({
     title: "Descrivi il lavoro",
     newConversation: "Nuova conversazione",
     intro:
-      "Raccontaci cosa devi fare: l'assistente chiede le informazioni mancanti e suggerisce le macchine del catalogo.",
-    guidedTitle: "Assistente guidato",
-    guidedBody:
-      "Le risposte seguono regole predefinite, non un modello di intelligenza artificiale. I suggerimenti vengono dal catalogo; prezzi e disponibilità dalle offerte dei noleggiatori.",
-    aiTitle: "Assistente AI",
-    aiBody:
-      "I suggerimenti sono limitati alle macchine del catalogo; prezzi e disponibilità vengono dalle offerte dei noleggiatori.",
-    englishOnly:
-      "Per ora l'assistente capisce e risponde solo in inglese: scrivi in inglese o scegli uno degli esempi.",
+      "Racconta all'assistente cosa devi fare, con parole tue. Chiede quello che manca, cerca nel catalogo e confronta per te le offerte di noleggio.",
     name: "Assistente Machina",
-    guided: "Guidato",
     online: "Online",
-    catalogOnly: "suggerisce solo macchine del catalogo",
+    catalogOnly: "cerca nel catalogo e nelle offerte attive",
     hello:
-      "Ciao! Descrivi il lavoro: cosa devi fare, dove si trova il cantiere e quando. Se conosci già misure, accesso o condizioni del terreno, aggiungili.",
-    typing: "L'assistente sta scrivendo…",
+      "Ciao! Sono l'assistente Machina. Descrivi il lavoro: cosa devi fare, dove si trova il cantiere e quando. Se conosci già misure, accesso o condizioni del terreno, aggiungili.",
     message: "Messaggio",
     placeholder: "Scrivi qui… (Invio per inviare)",
     send: "Invia",
@@ -213,6 +244,7 @@ function Assistant() {
   const [conv, setConv] = useState<Conversation>(() => (readSeed() ? EMPTY : load()))
   const [input, setInput] = useState("")
   const [busy, setBusy] = useState(false)
+  const [reveal, setReveal] = useState<Reveal | null>(null)
   const logRef = useRef<HTMLDivElement>(null)
 
   const update = (c: Conversation) => {
@@ -222,19 +254,28 @@ function Assistant() {
 
   async function send(text: string, base: Conversation) {
     const msg = text.trim()
-    if (!msg) return
+    if (!msg || busy || reveal) return
     let c: Conversation = { ...base, messages: [...base.messages, { role: "user", text: msg }] }
     update(c)
     setBusy(true)
+    const animate = !reducedMotion()
     try {
-      const r = await api.post<AssistantResult>("/api/assistant", { message: msg, state: c.state })
+      const [r] = await Promise.all([
+        api.post<AssistantResult>("/api/assistant", { message: msg, state: c.state, locale }),
+        animate ? sleep(THINK_MS) : null,
+      ])
+      const previous = c.result
       c = {
         ...c,
         state: r.state,
         result: r,
         selection: {},
-        messages: [...c.messages, { role: "bot", text: r.reply, questions: r.questions }],
+        messages: [
+          ...c.messages,
+          { role: "bot", text: r.reply, questions: r.questions, steps: r.steps },
+        ],
       }
+      if (animate) setReveal({ index: c.messages.length - 1, steps: 0, words: 0, previous })
     } catch (err) {
       c = {
         ...c,
@@ -268,12 +309,30 @@ function Assistant() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Play the newest answer back: one step at a time, then the reply a few words at a time.
+  useEffect(() => {
+    if (!reveal) return
+    const m = conv.messages[reveal.index]
+    const steps = m?.steps?.length ?? 0
+    const words = m ? tokens(m.text).length : 0
+    const timer =
+      reveal.steps < steps
+        ? setTimeout(() => setReveal({ ...reveal, steps: reveal.steps + 1 }), STEP_MS)
+        : reveal.words < words
+          ? setTimeout(
+              () => setReveal({ ...reveal, words: reveal.words + WORDS_PER_TICK }),
+              WORDS_MS
+            )
+          : setTimeout(() => setReveal(null), 0)
+    return () => clearTimeout(timer)
+  }, [reveal, conv.messages])
+
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight })
-  }, [conv.messages.length, busy])
+  }, [conv.messages.length, busy, reveal])
 
-  const r = conv.result
-  const mode = r?.mode ?? meta?.aiMode ?? "demo"
+  // The side panel catches up once the answer has been played back.
+  const r = reveal ? reveal.previous : conv.result
   const selection = (i: number, s: AssistantSuggestion) => conv.selection[i] ?? defaultSelection(s)
   const setSelection = (i: number, s: AssistantSuggestion, patch: Partial<Selection>) =>
     update({ ...conv, selection: { ...conv.selection, [i]: { ...selection(i, s), ...patch } } })
@@ -322,27 +381,19 @@ function Assistant() {
         eyebrow={t.eyebrow}
         title={t.title}
         actions={
-          <Button size="sm" onClick={() => update(EMPTY)}>
+          <Button
+            size="sm"
+            onClick={() => {
+              setReveal(null)
+              update(EMPTY)
+            }}
+          >
             {t.newConversation}
           </Button>
         }
       >
         {t.intro}
       </PageHead>
-      {mode === "demo" ? (
-        <Alert tone="info" size="sm" className="mb-3.5" title={t.guidedTitle}>
-          {t.guidedBody}
-        </Alert>
-      ) : (
-        <Alert tone="info" size="sm" className="mb-3.5" title={t.aiTitle}>
-          {t.aiBody}
-        </Alert>
-      )}
-      {mode === "demo" && t.englishOnly && (
-        <Alert tone="warn" size="sm" className="mb-3.5">
-          {t.englishOnly}
-        </Alert>
-      )}
       {r?.notice && (
         <Alert tone="warn" size="sm" className="mb-3.5">
           {r.notice}
@@ -359,9 +410,12 @@ function Assistant() {
               <b className="block text-[0.95rem]">{t.name}</b>
               <span className="text-ink-foreground/60 flex items-center gap-1.5 text-[0.78rem]">
                 <span className="size-1.5 rounded-full bg-emerald-400" aria-hidden />
-                {mode === "demo" ? t.guided : t.online} · {t.catalogOnly}
+                {t.online} · {t.catalogOnly}
               </span>
             </div>
+            <span className="text-ink-foreground/70 ml-auto rounded-full border border-white/20 px-2 py-0.5 text-[0.7rem] font-semibold tracking-wide uppercase">
+              {t.preview}
+            </span>
           </div>
           <div
             ref={logRef}
@@ -369,31 +423,52 @@ function Assistant() {
             className="bg-secondary flex-1 space-y-3 overflow-y-auto p-5"
           >
             {!conv.messages.length ? (
-              <Bubble role="bot" lang={mode === "demo" ? "en" : locale}>
-                {mode === "demo" ? M.en.hello : t.hello}
-                <Options options={EXAMPLES} onPick={(text) => send(text, conv)} />
+              <Bubble role="bot">
+                {t.hello}
+                <Options options={t.examples} onPick={(text) => send(text, conv)} />
               </Bubble>
             ) : (
-              conv.messages.map((m, i) => (
-                <Bubble
-                  key={i}
-                  role={m.role}
-                  lang={m.role === "bot" && mode === "demo" ? "en" : undefined}
-                >
-                  {m.text}
-                  {m === last &&
-                    m.questions?.map((q) => (
-                      <Options
-                        key={q.key}
-                        label={q.text}
-                        options={q.options}
-                        onPick={(text) => send(text, conv)}
+              conv.messages.map((m, i) => {
+                const playing = reveal?.index === i ? reveal : null
+                const stepsShown = playing ? playing.steps : (m.steps?.length ?? 0)
+                const writing = playing && playing.steps >= (m.steps?.length ?? 0)
+                const text = playing
+                  ? writing
+                    ? tokens(m.text).slice(0, playing.words).join("")
+                    : ""
+                  : m.text
+                // Steps first: the bubble appears once there is text to show.
+                return (
+                  <div key={i} className="space-y-2">
+                    {m.steps && m.steps.length > 0 && (
+                      <AgentSteps
+                        steps={m.steps}
+                        shown={stepsShown}
+                        playing={Boolean(playing)}
+                        open={m === last}
+                        doneLabel={t.stepsDone(m.steps.length)}
                       />
-                    ))}
-                </Bubble>
-              ))
+                    )}
+                    {(!playing || writing) && (
+                      <Bubble role={m.role}>
+                        {text}
+                        {m === last &&
+                          !playing &&
+                          m.questions?.map((q) => (
+                            <Options
+                              key={q.key}
+                              label={q.text}
+                              options={q.options}
+                              onPick={(text) => send(text, conv)}
+                            />
+                          ))}
+                      </Bubble>
+                    )}
+                  </div>
+                )
+              })
             )}
-            {busy && <p className="text-muted-foreground text-sm">{t.typing}</p>}
+            {busy && <Thinking label={t.thinking} />}
           </div>
           <form
             className="flex items-end gap-2 border-t bg-white p-3"
@@ -418,7 +493,12 @@ function Assistant() {
                 }
               }}
             />
-            <Button type="submit" variant="primary" disabled={busy} aria-label={t.send}>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={busy || Boolean(reveal)}
+              aria-label={t.send}
+            >
               <SendHorizontal aria-hidden /> <span className="max-sm:sr-only">{t.send}</span>
             </Button>
           </form>
@@ -549,14 +629,7 @@ function Bubble({
 }) {
   return (
     <div lang={lang} className={cn("flex items-end gap-2", role === "user" && "flex-row-reverse")}>
-      {role === "bot" && (
-        <span
-          aria-hidden
-          className="bg-ink inline-flex size-7 shrink-0 items-center justify-center rounded-full text-white"
-        >
-          <Sparkles className="size-3.5" />
-        </span>
-      )}
+      {role === "bot" && <BotAvatar />}
       <div
         className={cn(
           "max-w-[85%] px-4 py-3 text-[0.95rem] whitespace-pre-wrap shadow-[0_1px_2px_rgb(20_18_14/0.06)]",
@@ -568,6 +641,106 @@ function Bubble({
         {children}
       </div>
     </div>
+  )
+}
+
+function BotAvatar() {
+  return (
+    <span
+      aria-hidden
+      className="bg-ink inline-flex size-7 shrink-0 items-center justify-center rounded-full text-white"
+    >
+      <Sparkles className="size-3.5" />
+    </span>
+  )
+}
+
+/** Shown while the assistant works on an answer. */
+function Thinking({ label }: { label: string }) {
+  return (
+    <div className="flex items-end gap-2" role="status">
+      <BotAvatar />
+      <div className="border-border text-muted-foreground flex items-center gap-2 rounded-2xl rounded-bl-md border bg-white px-4 py-3 text-sm">
+        {label}
+        <span className="flex gap-1" aria-hidden>
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="size-1.5 animate-bounce rounded-full bg-current"
+              style={{ animationDelay: `${i * 150}ms` }}
+            />
+          ))}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/** What the assistant did for an answer: live while it plays, then folded away. */
+function AgentSteps({
+  steps,
+  shown,
+  playing,
+  open,
+  doneLabel,
+}: {
+  steps: AssistantStep[]
+  shown: number
+  playing: boolean
+  open: boolean
+  doneLabel: string
+}) {
+  const box = "border-border ml-9 rounded-xl border bg-white/70 px-3.5 py-2.5 text-sm"
+  if (playing) {
+    return (
+      <ol className={cn(box, "list-none space-y-2")} aria-live="polite">
+        {steps.slice(0, Math.min(shown + 1, steps.length)).map((s, i) => (
+          <StepRow key={i} step={s} done={i < shown} />
+        ))}
+      </ol>
+    )
+  }
+  return (
+    <details open={open} className={cn(box, "group")}>
+      <summary className="text-muted-foreground flex cursor-pointer list-none items-center gap-1.5 font-medium [&::-webkit-details-marker]:hidden">
+        <Sparkles aria-hidden className="text-brand size-3.5" />
+        {doneLabel}
+        <ChevronDown aria-hidden className="size-3.5 transition-transform group-open:rotate-180" />
+      </summary>
+      <ol className="mt-2 list-none space-y-2">
+        {steps.map((s, i) => (
+          <StepRow key={i} step={s} done />
+        ))}
+      </ol>
+    </details>
+  )
+}
+
+function StepRow({ step, done }: { step: AssistantStep; done: boolean }) {
+  const Icon = STEP_ICONS[step.kind]
+  return (
+    <li className="flex items-start gap-2.5">
+      <span
+        className={cn(
+          "mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full",
+          done ? "bg-ok-soft text-ok" : "bg-primary-soft text-brand"
+        )}
+      >
+        {done ? (
+          <CheckIcon aria-hidden className="size-3" />
+        ) : (
+          <Loader2 aria-hidden className="size-3 animate-spin" />
+        )}
+      </span>
+      <div className="min-w-0">
+        <div className="text-foreground flex items-center gap-1.5 font-medium">
+          <Icon aria-hidden className="text-muted-foreground size-3.5 shrink-0" />
+          {step.label}
+          {!done && "…"}
+        </div>
+        {done && <div className="text-muted-foreground text-[0.82rem]">{step.detail}</div>}
+      </div>
+    </li>
   )
 }
 

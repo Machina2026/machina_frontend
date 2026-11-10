@@ -647,6 +647,8 @@ export type AssistantState = {
   jobs: string[]
   text: string
   pending: string[]
+  /** Machines and best offers suggested last turn, so they aren't repeated in full. */
+  picked?: string
   unknown: string[]
   turns: number
   location?: string
@@ -665,9 +667,16 @@ export type AssistantState = {
   transport?: boolean
   operator?: boolean
 }
+/** One thing the assistant did to answer, shown as a step in the chat. */
+export type AssistantStep = {
+  kind: "read" | "search" | "offers" | "dates" | "check"
+  label: string
+  detail: string
+}
 export type AssistantResult = {
   mode: "demo" | "ai"
   reply: string
+  steps: AssistantStep[]
   questions: AssistantQuestion[]
   state: AssistantState
   summary: { label: string; value: string }[]
