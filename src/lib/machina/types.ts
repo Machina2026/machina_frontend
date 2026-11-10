@@ -741,6 +741,18 @@ export type CreditHistory = {
   note: { description: string; events: string[] } | null
 }
 
+/** What a check goes through, in order. The stub runs them all; Openapi only bureau and score. */
+export type CreditStepKey = "vat" | "registry" | "bureau" | "history" | "score"
+
+export type CreditStep = {
+  key: CreditStepKey
+  status: "waiting" | "running" | "done" | "failed" | "skipped"
+  /** Facts found at this step, e.g. { name, since } for the business register. */
+  detail: Record<string, string | number | boolean | null> | null
+  /** When the step finished. */
+  at: string | null
+}
+
 export type CreditCheck = {
   id: string
   /** "openapi", or "stub" for made-up development data. */
@@ -757,6 +769,8 @@ export type CreditCheck = {
   /** Estimated credit limit in euros. */
   creditLimit: number | null
   history: CreditHistory | null
+  /** Progress, step by step; null for checks made before steps were recorded. */
+  steps: CreditStep[] | null
   error: string | null
   createdAt: string
   completedAt: string | null

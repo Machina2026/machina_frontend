@@ -1,7 +1,20 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { FileSearch, Gauge, RefreshCw } from "lucide-react"
+import {
+  BadgeCheck,
+  Building2,
+  CalendarRange,
+  Check as CheckIcon,
+  FileSearch,
+  Gauge,
+  Landmark,
+  Loader2,
+  RefreshCw,
+  X as XIcon,
+  type LucideIcon,
+} from "lucide-react"
+import { useEffect, useRef } from "react"
 import { toast } from "sonner"
 
 import { Small } from "@/components/app/bits"
@@ -20,6 +33,8 @@ import type {
   CreditCheck,
   CreditChecksResponse,
   CreditLevel,
+  CreditStep,
+  CreditStepKey,
   CreditSummary,
 } from "@/lib/machina/types"
 import { cn } from "@/lib/utils"
@@ -102,6 +117,25 @@ const M = defineMessages({
     getReport: "Get report",
     checkDone: "Credit check done",
     checking: "Checking with the credit bureau…",
+    startedOn: (at: string, level: string) => `Started ${at} · ${level}`,
+    steps: {
+      vat: "Validate the VAT number",
+      registry: "Look up the business register",
+      bureau: "Request the report from the credit bureau",
+      history: "Read 12 months of history and balance sheets",
+      score: "Work out the risk class and credit limit",
+    } as Record<CreditStepKey, string>,
+    vatValid: (vat: string) => `${vat} is valid`,
+    registered: (name: string, since: string | null) =>
+      since ? `${name} · active since ${since}` : name,
+    reportReceived: (level: string): string =>
+      level === "top" ? "Full report received" : "Report received",
+    historyRead: (months: string, year: string | null) =>
+      `${months} months read${year ? ` · latest balance sheet ${year}` : ""}`,
+    scored: (score: string, rating: string | null) =>
+      rating && rating !== "ND" ? `${score} · rating ${rating}` : score,
+    notRun: "Not run",
+    howItRan: (n: number) => `How the check ran (${n} steps)`,
     never: "No credit check yet.",
     notFound:
       "The credit bureau has no data for this VAT number. New companies and sole traders are often not rated yet.",
@@ -146,6 +180,25 @@ const M = defineMessages({
     getReport: "Richiedi il report",
     checkDone: "Verifica completata",
     checking: "Verifica in corso con la centrale rischi…",
+    startedOn: (at: string, level: string) => `Avviata il ${at} · ${level}`,
+    steps: {
+      vat: "Verifica della partita IVA",
+      registry: "Ricerca nel Registro delle Imprese",
+      bureau: "Richiesta del report alla centrale rischi",
+      history: "Lettura di 12 mesi di storico e bilanci",
+      score: "Calcolo della classe di rischio e del fido",
+    } as Record<CreditStepKey, string>,
+    vatValid: (vat: string) => `${vat} è valida`,
+    registered: (name: string, since: string | null) =>
+      since ? `${name} · attiva dal ${since}` : name,
+    reportReceived: (level: string): string =>
+      level === "top" ? "Report completo ricevuto" : "Report ricevuto",
+    historyRead: (months: string, year: string | null) =>
+      `${months} mesi letti${year ? ` · ultimo bilancio ${year}` : ""}`,
+    scored: (score: string, rating: string | null) =>
+      rating && rating !== "ND" ? `${score} · rating ${rating}` : score,
+    notRun: "Non eseguito",
+    howItRan: (n: number) => `Come si è svolta la verifica (${n} passaggi)`,
     never: "Ancora nessuna verifica.",
     notFound:
       "La centrale rischi non ha dati per questa partita IVA. Le aziende nuove e le ditte individuali spesso non sono ancora valutate.",
@@ -218,6 +271,114 @@ function Metric({ label, children }: { label: string; children: React.ReactNode 
   )
 }
 
+const STEP_ICONS: Record<CreditStepKey, LucideIcon> = {
+  vat: BadgeCheck,
+  registry: Building2,
+  bureau: Landmark,
+  history: CalendarRange,
+  score: Gauge,
+}
+
+/** What a finished step found, as a sentence. */
+function stepDetail(s: CreditStep, t: (typeof M)["en"], locale: Locale): string | null {
+  const d = s.detail ?? {}
+  const text = (v: unknown) => (typeof v === "string" || typeof v === "number" ? String(v) : null)
+  switch (s.key) {
+    case "vat":
+      return text(d.vat) && t.vatValid(text(d.vat)!)
+    case "registry":
+      return text(d.name) && t.registered(text(d.name)!, text(d.since))
+    case "bureau":
+      return t.reportReceived(text(d.level) ?? "advanced")
+    case "history":
+      return text(d.months) && t.historyRead(text(d.months)!, text(d.balanceYear))
+    case "score":
+      return text(d.riskScore) && t.scored(scoreLabel(text(d.riskScore)!, locale), text(d.rating))
+  }
+}
+
+const STATUS_MARK: Record<CreditStep["status"], string> = {
+  running: "bg-primary-soft text-brand",
+  done: "bg-ok-soft text-ok",
+  failed: "bg-bad-soft text-bad",
+  waiting: "border-border border border-dashed",
+  skipped: "border-border border border-dashed",
+}
+
+function StepRow({ step }: { step: CreditStep }) {
+  const t = useMessages(M)
+  const locale = useLocale()
+  const Icon = STEP_ICONS[step.key]
+  const idle = step.status === "waiting" || step.status === "skipped"
+  const detail =
+    step.status === "done"
+      ? stepDetail(step, t, locale)
+      : step.status === "skipped"
+        ? t.notRun
+        : null
+  return (
+    <li className={cn("flex items-start gap-2.5", idle && "opacity-55")}>
+      <span
+        className={cn(
+          "mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full",
+          STATUS_MARK[step.status]
+        )}
+      >
+        {step.status === "running" && <Loader2 aria-hidden className="size-3 animate-spin" />}
+        {step.status === "done" && <CheckIcon aria-hidden className="size-3" />}
+        {step.status === "failed" && <XIcon aria-hidden className="size-3" />}
+      </span>
+      <div className="min-w-0">
+        <div
+          className={cn(
+            "flex items-center gap-1.5",
+            idle ? "text-muted-foreground" : "text-foreground font-medium"
+          )}
+        >
+          <Icon aria-hidden className="text-muted-foreground size-3.5 shrink-0" />
+          {t.steps[step.key]}
+          {step.status === "running" && "…"}
+        </div>
+        {detail && <div className="text-muted-foreground text-[0.82rem]">{detail}</div>}
+      </div>
+    </li>
+  )
+}
+
+/** The steps of a check: live while it runs, folded away once it's done. */
+function CreditSteps({ c }: { c: CreditCheck }) {
+  const t = useMessages(M)
+  const steps = c.steps ?? []
+  if (!steps.length) return null
+  const list = (
+    <ol className="mt-2 list-none space-y-2 p-0">
+      {steps.map((s) => (
+        <StepRow key={s.key} step={s} />
+      ))}
+    </ol>
+  )
+  if (c.status === "pending")
+    return (
+      <div
+        className="border-border mt-3 rounded-xl border px-3.5 py-1.5 pb-3 text-sm"
+        aria-live="polite"
+      >
+        {list}
+      </div>
+    )
+  return (
+    <details
+      open={c.status === "failed"}
+      className="border-border mt-3 rounded-xl border px-3.5 py-2.5 text-sm"
+    >
+      <summary className="text-muted-foreground cursor-pointer font-medium">
+        {t.howItRan(steps.length)}
+      </summary>
+      {list}
+    </details>
+  )
+}
+
 function CheckResult({ c }: { c: CreditCheck }) {
   const t = useMessages(M)
   const locale = useLocale()
@@ -233,14 +394,22 @@ function CheckResult({ c }: { c: CreditCheck }) {
 
   if (c.status === "pending")
     return (
-      <Alert tone="info" size="sm">
-        {t.checking}
-      </Alert>
+      <>
+        <Alert tone="info" size="sm">
+          {t.checking}
+        </Alert>
+        <CreditSteps c={c} />
+        <Small className="mt-3">
+          {t.startedOn(localDateTime(c.createdAt), t.levels[c.level])}
+          {who && ` · ${who}`}
+        </Small>
+      </>
     )
   if (c.status === "not_found")
     return (
       <>
         <Alert size="sm">{t.notFound}</Alert>
+        <CreditSteps c={c} />
         {meta}
       </>
     )
@@ -250,6 +419,7 @@ function CheckResult({ c }: { c: CreditCheck }) {
         <Alert tone="bad" size="sm" title={t.failed}>
           {c.error} {t.tryAgain}
         </Alert>
+        <CreditSteps c={c} />
         {meta}
       </>
     )
@@ -309,6 +479,7 @@ function CheckResult({ c }: { c: CreditCheck }) {
           </b>
         </Metric>
       </div>
+      <CreditSteps c={c} />
       {meta}
       {c.history && c.history.riskScore.length > 0 && <History c={c} />}
     </>
@@ -412,19 +583,31 @@ export function CreditPanel({ companyId }: { companyId: string }) {
   const q = useQuery({
     queryKey: key,
     queryFn: () => api.get<CreditChecksResponse>(`/api/admin/companies/${companyId}/credit-checks`),
-    // The automatic check after registration may still be running.
+    // A check runs in the background: follow its steps until it's done.
     refetchInterval: (query) =>
-      query.state.data?.items.some((c) => c.status === "pending") ? 2000 : false,
+      query.state.data?.items.some((c) => c.status === "pending") ? 800 : false,
   })
   const run = useMutation({
     mutationFn: (level: CreditLevel) =>
       api.post<CreditCheck>(`/api/admin/companies/${companyId}/credit-checks`, { level }),
-    onSuccess: () => {
-      toast.success(t.checkDone)
-      void qc.invalidateQueries({ queryKey: ["admin"] })
-    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: key }),
     onError: (err) => toast.error(err.message),
   })
+
+  // Say so when a check seen running finishes, and refresh the list badges.
+  const running = useRef(new Set<string>())
+  useEffect(() => {
+    for (const c of q.data?.items ?? []) {
+      if (c.status === "pending") running.current.add(c.id)
+      else if (running.current.delete(c.id)) {
+        if (c.status === "completed") toast.success(t.checkDone)
+        else if (c.status === "not_found") toast(t.statuses.not_found)
+        else toast.error(t.failed)
+        void qc.invalidateQueries({ queryKey: ["admin"] })
+      }
+    }
+  }, [q.data, qc, t])
+  const busy = run.isPending || !!q.data?.items.some((c) => c.status === "pending")
 
   return (
     <Card className="mb-4">
@@ -438,17 +621,13 @@ export function CreditPanel({ companyId }: { companyId: string }) {
                 aside={
                   enabled && (
                     <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        disabled={run.isPending}
-                        onClick={() => run.mutate("advanced")}
-                      >
-                        <RefreshCw aria-hidden className={cn(run.isPending && "animate-spin")} />
+                      <Button size="sm" disabled={busy} onClick={() => run.mutate("advanced")}>
+                        <RefreshCw aria-hidden className={cn(busy && "animate-spin")} />
                         {t.runCheck}
                       </Button>
                       <Button
                         size="sm"
-                        disabled={run.isPending}
+                        disabled={busy}
                         onClick={async () => {
                           const ok = await confirm({
                             title: t.fullReportTitle,
