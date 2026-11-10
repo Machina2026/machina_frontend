@@ -20,8 +20,9 @@ import { useFormat, useMessages } from "@/i18n/client"
 import { defineMessages } from "@/i18n/messages"
 import { today } from "@/lib/machina/format"
 import { useLabels } from "@/lib/machina/labels"
-import type { OrderChange, OrderCharge, OrderView, ReportKind, Role } from "@/lib/machina/types"
+import type { OrderChange, OrderCharge, OrderView, ReportKind, Viewer } from "@/lib/machina/types"
 
+import { ORDER_API, ORDERS_AREA } from "./contract"
 import { ReportDialog, ReportsCard, SignReportDialog } from "./handover"
 import {
   ChargeDialog,
@@ -44,6 +45,7 @@ type Dialog =
   | { kind: "revise-charge"; charge: OrderCharge }
   | { kind: "invoice" }
   | { kind: "report"; report: ReportKind }
+  | { kind: "cancel" }
   | { kind: "sign-report"; report: ReportKind }
 
 const M = defineMessages({
@@ -58,6 +60,19 @@ const M = defineMessages({
     openContract: "Open the contract",
     noContract: "Confirmed before contracts were signed in Machina.",
     orders: "Orders",
+    rentals: "Requests and orders",
+    cancelOrder: "Cancel order",
+    keepOrder: "Keep the order",
+    cancelTitle: (code: string) => `Cancel order ${code}?`,
+    cancelBody:
+      "Only before delivery. The customer's unpaid payment requests are cancelled and any payment made is refunded in full, taking back the rental company's share and Machina's commission. Both companies see the reason in the order.",
+    cancelReason: "Reason (visible to the customer and the rental company)",
+    cancelled: "Order cancelled",
+    cancelFailed: (what: string) =>
+      `Order cancelled, but some payments were not settled: ${what}. Retry them from the payment card.`,
+    cancelledTitle: "Order cancelled",
+    cancelledBody: (by: string, at: string, reason: string) =>
+      `Cancelled by ${by} on ${at}: ${reason}`,
     orderTitle: (code: string) => `Order ${code}`,
     invoiceUploaded: "Invoice uploaded",
     invoiceNotUploaded: "Invoice not uploaded",
@@ -189,6 +204,19 @@ const M = defineMessages({
     openContract: "Apri il contratto",
     noContract: "Confermato prima che i contratti si firmassero su Machina.",
     orders: "Ordini",
+    rentals: "Richieste e ordini",
+    cancelOrder: "Annulla l'ordine",
+    keepOrder: "Mantieni l'ordine",
+    cancelTitle: (code: string) => `Annullare l'ordine ${code}?`,
+    cancelBody:
+      "Solo prima della consegna. Le richieste di pagamento non pagate del cliente vengono annullate e i pagamenti già fatti rimborsati per intero, riprendendo la quota del noleggiatore e la commissione di Machina. Entrambe le aziende vedono il motivo nell'ordine.",
+    cancelReason: "Motivo (visibile al cliente e al noleggiatore)",
+    cancelled: "Ordine annullato",
+    cancelFailed: (what: string) =>
+      `Ordine annullato, ma alcuni pagamenti non sono stati sistemati: ${what}. Riprova dalla scheda del pagamento.`,
+    cancelledTitle: "Ordine annullato",
+    cancelledBody: (by: string, at: string, reason: string) =>
+      `Annullato da ${by} il ${at}: ${reason}`,
     orderTitle: (code: string) => `Ordine ${code}`,
     invoiceUploaded: "Fattura caricata",
     invoiceNotUploaded: "Fattura non caricata",
@@ -312,11 +340,12 @@ const M = defineMessages({
   },
 })
 
-export const orderKey = (role: Role, id: string) => ["order", role, id] as const
+export const orderKey = (role: Viewer, id: string) => ["order", role, id] as const
 
-export function OrderDetail({ id, role }: { id: string; role: Role }) {
-  const base = role === "client" ? "/api/client/orders/" : "/api/partner/orders/"
-  const area = role === "client" ? "/buyer" : "/supplier"
+/** An order as its client or partner sees it; for an admin, read-only with both sides' details. */
+export function OrderDetail({ id, role }: { id: string; role: Viewer }) {
+  const base = ORDER_API[role]
+  const orders = ORDERS_AREA[role]
   const t = useMessages(M)
   const L = useLabels()
   const { date, dateTime, eur, num } = useFormat()
@@ -361,7 +390,11 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
         const nextReport: ReportKind | null =
           o.status === "confirmed" ? "delivery" : o.status === "in_progress" ? "return" : null
         const statusAction =
-          role === "partner" && nextReport ? (
+          role === "admin" && o.status === "confirmed" ? (
+            <Button variant="danger" onClick={() => setDialog({ kind: "cancel" })}>
+              {t.cancelOrder}
+            </Button>
+          ) : role === "partner" && nextReport ? (
             <Button
               variant="primary"
               onClick={() => setDialog({ kind: "report", report: nextReport })}
@@ -372,7 +405,17 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
 
         return (
           <>
-            <Crumbs items={[[t.orders, `${area}/orders`], [o.code]]} />
+            <Crumbs
+              items={
+                role === "admin"
+                  ? [
+                      [t.rentals, "/admin/rentals"],
+                      [o.requestCode, `/admin/rentals/requests/${o.requestId}`],
+                      [o.code],
+                    ]
+                  : [[t.orders, orders], [o.code]]
+              }
+            />
             <div className="mb-[18px] flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h1 className="mb-1.5">{t.orderTitle(o.code)}</h1>
@@ -386,14 +429,31 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
                   )}
                 </div>
                 <Small className="mt-1.5">
-                  {role === "client" ? t.rentalCompany : t.customer}:{" "}
-                  <b>{role === "client" ? o.partnerName : o.clientName}</b> · {t.request}{" "}
-                  {o.requestCode} · {t.quote} {o.quoteCode}
+                  {role !== "partner" && (
+                    <>
+                      {t.rentalCompany}: <b>{o.partnerName}</b> ·{" "}
+                    </>
+                  )}
+                  {role !== "client" && (
+                    <>
+                      {t.customer}: <b>{o.clientName}</b> ·{" "}
+                    </>
+                  )}
+                  {t.request} {o.requestCode} · {t.quote} {o.quoteCode}
                 </Small>
               </div>
               {statusAction}
             </div>
 
+            {o.cancellation && (
+              <Alert tone="bad" className="mb-5" title={t.cancelledTitle}>
+                {t.cancelledBody(
+                  o.cancellation.by,
+                  dateTime(o.cancellation.at),
+                  o.cancellation.reason
+                )}
+              </Alert>
+            )}
             <AttentionBanner order={o} role={role} />
 
             <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -440,7 +500,8 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
                   <CardHead
                     title={t.rentalChanges}
                     actions={
-                      active && (
+                      active &&
+                      role !== "admin" && (
                         <Button
                           size="sm"
                           variant="primary"
@@ -517,7 +578,7 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
                         {c.declineReason && (
                           <Small className="text-faint">{t.reason(c.declineReason)}</Small>
                         )}
-                        {role === "partner" && c.invoiceNotice && (
+                        {role !== "client" && c.invoiceNotice && (
                           <Alert tone="warn" size="sm" className="mt-2">
                             {t.afterInvoice}
                           </Alert>
@@ -718,7 +779,7 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
                       )
                     }
                   />
-                  {role === "partner" &&
+                  {role !== "client" &&
                     o.notices.map((n, i) => (
                       <Alert key={i} tone="warn" size="sm" className="mb-2" title={t.taxAttention}>
                         {n.text}
@@ -730,7 +791,7 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
                       <Small>{t.draftNote}</Small>
                     </div>
                     <Link
-                      href={`${area}/orders/${o.id}/draft-invoice`}
+                      href={`${orders}/${o.id}/draft-invoice`}
                       className={buttonVariants({ size: "sm" })}
                     >
                       {t.openDraft}
@@ -847,7 +908,7 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
                         {t.contractDue(o.contract.paymentDays, date(o.contract.paymentDue))}
                       </Small>
                       <Link
-                        href={`${area}/orders/${o.id}/contract`}
+                        href={`${orders}/${o.id}/contract`}
                         className={buttonVariants({ size: "sm", block: true, className: "mt-2.5" })}
                       >
                         {t.openContract}
@@ -932,6 +993,29 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
                 submit={submitTo("/invoices", t.docUploaded)}
               />
             )}
+            {dialog?.kind === "cancel" && (
+              <ReasonDialog
+                title={t.cancelTitle(o.code)}
+                description={t.cancelBody}
+                label={t.cancelReason}
+                confirmLabel={t.cancelOrder}
+                dismissLabel={t.keepOrder}
+                onClose={() => setDialog(null)}
+                submit={async (body) => {
+                  const r = await api.post<{
+                    order: OrderView
+                    failed: { id: string; description: string; error: string }[]
+                  }>(`/api/admin/orders/${id}/cancel`, body)
+                  qc.setQueryData(orderKey(role, id), r.order)
+                  void qc.invalidateQueries({ queryKey: ["admin"] })
+                  if (r.failed.length)
+                    toast.error(
+                      t.cancelFailed(r.failed.map((f) => `${f.description}: ${f.error}`).join("; "))
+                    )
+                  else toast.success(t.cancelled)
+                }}
+              />
+            )}
             {dialog?.kind === "report" && (
               <ReportDialog
                 order={o}
@@ -956,11 +1040,12 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
 }
 
 /** What this user has to do on the order, each linking to its section. */
-function AttentionBanner({ order: o, role }: { order: OrderView; role: Role }) {
+function AttentionBanner({ order: o, role }: { order: OrderView; role: Viewer }) {
   const t = useMessages(M)
   const L = useLabels()
   const { date, eur } = useFormat()
   const items: { text: string; href: string }[] = []
+  if (role === "admin") return null
   if (role === "client") {
     for (const ch of o.changes) {
       if (ch.status === "pending_approval")

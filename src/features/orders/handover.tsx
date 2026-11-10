@@ -23,7 +23,7 @@ import type {
   OrderView,
   Reading,
   ReportKind,
-  Role,
+  Viewer,
 } from "@/lib/machina/types"
 
 import { SignatureFields } from "./contract"
@@ -180,7 +180,7 @@ export function ReportsCard({
   openFile,
 }: {
   order: OrderView
-  role: Role
+  role: Viewer
   onRecord: (kind: ReportKind) => void
   onSign: (kind: ReportKind) => void
   openFile: (f: FileMeta) => void

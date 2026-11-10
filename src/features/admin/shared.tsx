@@ -137,6 +137,7 @@ export function useAdminAction<TArgs>(fn: (args: TArgs) => Promise<unknown>, suc
 
 function targetHref(e: AuditEntry): string | null {
   if (e.targetType === "company") return `/admin/companies/${e.targetId}`
+  if (e.targetType === "order") return `/admin/rentals/orders/${e.targetId}`
   if (e.targetType === "user" && e.targetLabel) return `/admin/users${qs({ q: e.targetLabel })}`
   return null
 }

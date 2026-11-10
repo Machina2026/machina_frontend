@@ -2,6 +2,8 @@
 // Money values are euros (VAT excluded unless the field says gross).
 
 export type Role = "client" | "partner"
+/** Who looks at a rental document: its client, its partner, or a Machina admin (read-only). */
+export type Viewer = Role | "admin"
 
 export type TransportMode = "fixed" | "on_quote" | "unavailable"
 export type OperatorMode = "available" | "on_quote" | "unavailable" | "included"
@@ -16,8 +18,9 @@ export type QuoteStatus =
   | "withdrawn"
 export type OrderStatus = "confirmed" | "in_progress" | "completed" | "cancelled"
 /** An order's payments overall. */
-export type PaymentStatus = "none" | "pending" | "due" | "overdue" | "paid"
-export type PaymentItemStatus = "pending" | "open" | "overdue" | "paid" | "void" | "uncollectible"
+export type PaymentStatus = "none" | "pending" | "due" | "overdue" | "paid" | "refunded"
+export type PaymentItemStatus =
+  "pending" | "open" | "overdue" | "paid" | "void" | "uncollectible" | "refunded"
 export type ChangeKind = "extension" | "accessory" | "service"
 export type ChangeStatus =
   "requested_by_client" | "pending_approval" | "accepted" | "rejected" | "declined_by_partner"
@@ -409,13 +412,18 @@ export type PaymentItem = {
   status: PaymentItemStatus
   number: string | null
   paidAt: string | null
+  refundedAt?: string | null
+  /** Why an admin cancelled or refunded it. */
+  closedReason?: string | null
   /** Made-up payment (no payment provider configured): paid with a test button. */
   test: boolean
   /** Supplier view only: Machina's commission and what the rental company receives. */
   fee?: number
   payout?: number
-  /** Client view only. */
+  /** Client and admin views. */
   pdfUrl?: string | null
+  /** Admin view only: why the last attempt to issue it failed. */
+  issueError?: string | null
 }
 
 export type Payment = {
@@ -515,6 +523,8 @@ export type Order = {
   /** Missing on orders made before contracts were signed in the app. */
   contract?: Contract
   reports: { delivery?: HandoverReport; return?: HandoverReport }
+  /** Set when a Machina admin cancelled the order. */
+  cancellation?: { at: string; by: string; reason: string }
   payment: Payment
   history: HistoryEntry[]
 }
@@ -902,7 +912,7 @@ export type AdminCompanyDetail = {
 export type AuditEntry = {
   id: string
   action: string
-  targetType: "company" | "user" | "invitation"
+  targetType: "company" | "user" | "invitation" | "offer" | "order"
   targetId: string
   /** Company or user name, invitation email; null if the target no longer exists. */
   targetLabel: string | null
@@ -941,4 +951,39 @@ export type PayoutsResponse = {
   due: string[]
   totals: { waiting: number; open: number; paid: number }
   payments: PayoutItem[]
+}
+
+// ------------------------------------------------------------ admin rentals
+export type AdminRequestPart = {
+  quoteId: string
+  code: string
+  partnerId: string
+  partnerName: string
+  status: QuoteStatus
+  net: number
+  order: { id: string; code: string; status: OrderStatus; payment: PaymentStatus } | null
+}
+export type AdminRequestRow = Pick<
+  RentalRequest,
+  | "id"
+  | "code"
+  | "createdAt"
+  | "createdBy"
+  | "clientId"
+  | "clientName"
+  | "period"
+  | "site"
+  | "source"
+> & { overview: RequestOverview; parts: AdminRequestPart[] }
+export type AdminRequestDetail = RequestDetail & { orders: OrderView[] }
+export type AdminRentalsSummary = {
+  quotes: { awaitingPartner: number; awaitingClient: number }
+  orders: { confirmed: number; inProgress: number; completed: number }
+  payments: {
+    open: number
+    openGross: number
+    overdue: number
+    overdueGross: number
+    waiting: number
+  }
 }

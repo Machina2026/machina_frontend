@@ -398,17 +398,23 @@ export function PartnerChangeDialog({
 /** A single free-text reason (decline, reject, dispute). */
 export function ReasonDialog({
   title,
+  description,
   label,
   optional,
   confirmLabel,
+  dismissLabel,
   field = "reason",
   onClose,
   submit,
 }: {
   title: string
+  /** Shown under the title: what confirming does. */
+  description?: string
   label: string
   optional?: boolean
   confirmLabel?: string
+  /** The button that closes without doing anything; "Cancel" by default. */
+  dismissLabel?: string
   field?: string
   onClose: () => void
   submit: Submit
@@ -419,7 +425,7 @@ export function ReasonDialog({
   const [text, setText] = useState("")
   const [local, setLocal] = useState("")
   return (
-    <Modal open onOpenChange={(v) => !v && onClose()} title={title}>
+    <Modal open onOpenChange={(v) => !v && onClose()} title={title} description={description}>
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -432,7 +438,7 @@ export function ReasonDialog({
           <Textarea id="reason" value={text} onChange={(e) => setText(e.target.value)} />
         </Field>
         <ModalActions>
-          <Button onClick={onClose}>{c.cancel}</Button>
+          <Button onClick={onClose}>{dismissLabel ?? c.cancel}</Button>
           <Button type="submit" variant="danger" disabled={s.busy}>
             {confirmLabel ?? c.confirm}
           </Button>

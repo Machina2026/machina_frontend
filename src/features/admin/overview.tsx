@@ -26,6 +26,7 @@ import { useMe } from "@/lib/machina/hooks"
 import { useLabels } from "@/lib/machina/labels"
 import type { AdminCompanyListItem, AuditEntry, Paged } from "@/lib/machina/types"
 
+import { RentalStats, useRentalsSummary } from "./rentals"
 import { AuditList } from "./shared"
 
 const PENDING = "/admin/companies?status=pending"
@@ -75,6 +76,7 @@ export function AdminOverview() {
   const { localDate } = useFormat()
   const me = useMe().data
   const stats = useAdminStats()
+  const rentals = useRentalsSummary()
   const pending = useQuery({
     queryKey: ["admin", "companies", { status: "pending", pageSize: 5 }],
     queryFn: () =>
@@ -142,6 +144,7 @@ export function AdminOverview() {
                 icon={Building2}
               />
             </StatGrid>
+            {rentals.data && <RentalStats s={rentals.data} />}
             <div className="grid gap-4 lg:grid-cols-2">
               <Card>
                 <PanelTitle

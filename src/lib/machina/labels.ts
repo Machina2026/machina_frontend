@@ -49,6 +49,7 @@ const TONES = {
     due: "warn",
     overdue: "bad",
     paid: "ok",
+    refunded: "neutral",
   } satisfies Record<PaymentStatus, BadgeTone>,
   CHANGE_STATUS: {
     requested_by_client: "warn",
@@ -133,6 +134,7 @@ const TEXTS = defineMessages<Texts>({
       due: "Payment due",
       overdue: "Payment overdue",
       paid: "Paid",
+      refunded: "Refunded",
     },
     CHANGE_STATUS: {
       requested_by_client: "Awaiting partner's price",
@@ -199,6 +201,9 @@ const TEXTS = defineMessages<Texts>({
     COMPANY_ROLE: { owner: "Owner", member: "Member" },
     AUDIT_ACTION: {
       "company.registered": "Registered",
+      "order.cancelled": "Cancelled order",
+      "payment.voided": "Cancelled a payment request on",
+      "payment.refunded": "Refunded a payment on",
       "company.approve": "Approved",
       "company.reject": "Rejected",
       "company.suspend": "Suspended",
@@ -243,6 +248,7 @@ const TEXTS = defineMessages<Texts>({
       due: "Da pagare",
       overdue: "Pagamento scaduto",
       paid: "Pagato",
+      refunded: "Rimborsato",
     },
     CHANGE_STATUS: {
       requested_by_client: "In attesa del prezzo del noleggiatore",
@@ -318,6 +324,9 @@ const TEXTS = defineMessages<Texts>({
     COMPANY_ROLE: { owner: "Titolare", member: "Membro" },
     AUDIT_ACTION: {
       "company.registered": "Ha registrato",
+      "order.cancelled": "Ha annullato l'ordine",
+      "payment.voided": "Ha annullato una richiesta di pagamento su",
+      "payment.refunded": "Ha rimborsato un pagamento su",
       "company.approve": "Ha approvato",
       "company.reject": "Ha rifiutato",
       "company.suspend": "Ha sospeso",

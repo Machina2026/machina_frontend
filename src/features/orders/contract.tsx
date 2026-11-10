@@ -13,7 +13,24 @@ import { Input } from "@/components/ui/input"
 import { useFormat, useLocale, useMessages } from "@/i18n/client"
 import { defineMessages } from "@/i18n/messages"
 import { api } from "@/lib/machina/api"
-import type { ContractParty, ContractTerms, OrderView, Role, Signature } from "@/lib/machina/types"
+import type {
+  ContractParty,
+  ContractTerms,
+  OrderView,
+  Signature,
+  Viewer,
+} from "@/lib/machina/types"
+
+export const ORDER_API: Record<Viewer, string> = {
+  client: "/api/client/orders/",
+  partner: "/api/partner/orders/",
+  admin: "/api/admin/orders/",
+}
+export const ORDERS_AREA: Record<Viewer, string> = {
+  client: "/buyer/orders",
+  partner: "/supplier/orders",
+  admin: "/admin/rentals/orders",
+}
 
 const M = defineMessages({
   en: {
@@ -177,10 +194,9 @@ export function ContractDocument({
 }
 
 /** The order's signed contract, printable. */
-export function ContractPage({ orderId, role }: { orderId: string; role: Role }) {
+export function ContractPage({ orderId, role }: { orderId: string; role: Viewer }) {
   const t = useMessages(M)
-  const area = role === "client" ? "/buyer" : "/supplier"
-  const base = role === "client" ? "/api/client/orders/" : "/api/partner/orders/"
+  const base = ORDER_API[role]
   const q = useQuery({
     queryKey: ["order", role, orderId],
     queryFn: () => api.get<OrderView>(base + orderId),
@@ -190,7 +206,7 @@ export function ContractPage({ orderId, role }: { orderId: string; role: Role })
       {(o) => (
         <>
           <div className="no-print mb-4 flex flex-wrap items-center justify-between gap-2">
-            <Link href={`${area}/orders/${o.id}`}>{t.back(o.code)}</Link>
+            <Link href={`${ORDERS_AREA[role]}/${o.id}`}>{t.back(o.code)}</Link>
             {o.contract && <Button onClick={() => window.print()}>{t.print}</Button>}
           </div>
           <article className="bg-card mx-auto max-w-[860px] rounded-lg border p-6 shadow-sm print:border-0 print:shadow-none">
