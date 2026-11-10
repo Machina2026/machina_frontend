@@ -55,16 +55,21 @@ describe("request → quote → order", () => {
     let q = store.get<Quote>("quotes", req.quoteIds[0])!
     q = S.partnerRevise(store, user("u-p1"), q, { lines: q.versions[0].lines, validUntil: d(3) })
     expect(q.status).toBe("sent")
-    expect(() => S.clientAccept(store, user("u-c1"), q, { version: 1, acceptTerms: true })).toThrow(
+    const signed = { signatureName: "Laura Bianchi", confirm: true }
+    expect(() => S.clientAccept(store, user("u-c1"), q, { version: 1, ...signed })).toThrow(
       /newer version/
     )
-    const { quote, order } = S.clientAccept(store, user("u-c1"), q, {
-      version: 2,
-      acceptTerms: true,
-    })
+    expect(() => S.clientAccept(store, user("u-c1"), q, { version: 2, confirm: true })).toThrow(
+      /Sign the rental contract/
+    )
+    const { quote, order } = S.clientAccept(store, user("u-c1"), q, { version: 2, ...signed })
     expect(quote.status).toBe("accepted")
     expect(order.baseTotals.net).toBe(q.versions[1].totals.net)
-    expect(order.payment.status).toBe("unpaid")
+    expect(order.contract?.signature.name).toBe("Laura Bianchi")
+    expect(order.payment).toMatchObject({
+      status: "due",
+      items: [{ kind: "rental", gross: q.versions[1].totals.gross, test: true }],
+    })
   })
 
   it("updates the agreed total and end date only when the customer accepts an extension", () => {

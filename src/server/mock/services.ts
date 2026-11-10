@@ -28,7 +28,16 @@ import type {
   SiteRef,
   User,
   HistoryEntry,
+  Fuel,
+  HandoverReport,
+  Payment,
+  PaymentItem,
+  Reading,
+  ReportKind,
+  Signature,
 } from "@/lib/machina/types"
+
+import { contractTerms, PAYMENT_DAYS, partyOf, termsHash } from "./contract"
 
 import { addDays, calendarDays, now, today, validDate } from "./dates"
 import { PROVINCE_IDS, VAT_RATE } from "./meta"
@@ -447,6 +456,24 @@ export function partnerDecline(store: Store, user: User, q: Quote, data: Body): 
   return q
 }
 
+/** A simple electronic signature: the name typed and the box ticked. */
+export function readSignature(data: Body, user: User, errors: Errors): Signature | null {
+  const name = str(data.signatureName).trim().replace(/\s+/g, " ")
+  if (name.length < 3) errors.signatureName = "Type your full name to sign"
+  else if (name.length > 120) errors.signatureName = "Name too long"
+  if (data.confirm !== true) errors.confirm = "Tick the box to sign"
+  if (errors.signatureName || errors.confirm) return null
+  return { name, userId: user.id, userName: user.name, at: now(), ip: "" }
+}
+
+/** The contract accepting the quote's current version would sign. */
+export function quoteContract(store: Store, q: Quote) {
+  const partner = store.get<Partner>("partners", q.partnerId)
+  const client = store.get<Client>("clients", q.clientId)
+  if (!partner || !client) throw new ApiError(404, "Quote not found")
+  return contractTerms(q, currentVersion(q), partyOf(partner), partyOf(client), today())
+}
+
 export function clientAccept(
   store: Store,
   user: User,
@@ -462,17 +489,30 @@ export function clientAccept(
     throw new ApiError(409, `A newer version of the quote is available (v${v.n}). Reload the page.`)
   }
   if (!v.totals.complete) throw new ApiError(409, "The quote still contains lines to be priced.")
-  if (!data.acceptTerms) {
-    throw new ApiError(400, "Confirm you have read the quote lines and conditions", {
-      acceptTerms: "Required",
-    })
-  }
+  const errors: Errors = {}
+  const signature = readSignature(data, user, errors)
+  if (!signature) throw new ApiError(400, "Sign the rental contract to accept", errors)
+  const terms = quoteContract(store, q)
   const actor = actorLabel(store, user)
   q.status = "accepted"
   q.acceptedVersion = v.n
-  q.acceptance = { version: v.n, by: actor, at: now() }
-  hist(q, actor, `Quote v${v.n} accepted. Price locked: ${fmtEur(v.totals.net)} + VAT.`)
+  q.acceptance = { version: v.n, by: actor, at: signature.at }
+  hist(
+    q,
+    actor,
+    `Quote v${v.n} accepted and rental contract signed as "${signature.name}". Price locked: ${fmtEur(v.totals.net)} + VAT.`
+  )
   const order = createOrder(store, q, actor)
+  order.contract = { ...terms, id: newId("ctr"), hash: termsHash(terms), signature }
+  addPayment(
+    order,
+    "rental",
+    "",
+    `Rental ${order.code} (quote ${q.code} v${v.n})`,
+    v.totals.net,
+    commissionRate(store, order)
+  )
+  store.put("orders", order)
   q.orderId = order.id
   store.put("quotes", q)
   return { quote: q, order }
@@ -533,7 +573,8 @@ function createOrder(store: Store, q: Quote, actor: string): Order {
     charges: [],
     invoices: [],
     notices: [],
-    payment: { status: "unpaid" },
+    reports: {},
+    payment: paymentOverview([]),
     history: [],
   }
   hist(order, actor, `Order confirmed by accepting quote ${q.code} v${v.n}.`)
@@ -749,6 +790,14 @@ export function clientDecideChange(
       actor,
       `${change.code} accepted. Agreed total updated from ${fmtEur(change.prevGross)} to ${fmtEur(change.newGross)} (VAT included).`
     )
+    addPayment(
+      order,
+      "change",
+      change.id,
+      `${order.code}: change ${change.code}`,
+      change.line?.amount ?? 0,
+      commissionRate(store, order)
+    )
     if (order.invoices.length) {
       change.invoiceNotice = true
       order.notices.push({
@@ -839,6 +888,14 @@ export function clientDecideCharge(
   })
   if (decision === "accept") {
     hist(order, actor, `${charge.code} accepted: added to the agreed total.`)
+    addPayment(
+      order,
+      "charge",
+      charge.id,
+      `${order.code}: charge ${charge.code} (${CHARGE_KINDS[charge.kind]})`,
+      charge.amount,
+      0
+    )
     if (order.invoices.length) {
       order.notices.push({
         at: now(),
@@ -889,21 +946,172 @@ export function partnerUpdateCharge(
   return order
 }
 
-export function partnerSetStatus(store: Store, user: User, order: Order, status: unknown): Order {
-  const allowed: Record<string, string[]> = {
-    confirmed: ["in_progress"],
-    in_progress: ["completed"],
+const FUELS: Fuel[] = ["empty", "quarter", "half", "three_quarters", "full", "not_applicable"]
+
+/** The partner's signed delivery report (starts the rental) or return report (ends it). */
+export function partnerReport(
+  store: Store,
+  user: User,
+  order: Order,
+  kind: string,
+  data: Body,
+  photos: string[]
+): Order {
+  if (kind !== "delivery" && kind !== "return") throw new ApiError(404, "Report not found")
+  const reports = (order.reports ??= {})
+  if (kind === "delivery" && order.status !== "confirmed")
+    throw new ApiError(409, "The delivery report is already recorded.")
+  if (kind === "return" && (order.status !== "in_progress" || !reports.delivery))
+    throw new ApiError(409, "Record the delivery report first.")
+  const errors: Errors = {}
+  const raw = Array.isArray(data.readings) ? (data.readings as Body[]) : []
+  const readings: Reading[] = order.items.map((it, i) => {
+    const r = raw.find((x) => x?.itemId === it.id) ?? {}
+    const hourMeter = num(r.hourMeter, `readings.${i}.hourMeter`, errors, {
+      minimum: 0,
+      required: false,
+    })
+    const before = reports.delivery?.readings.find((x) => x.itemId === it.id)
+    if (
+      kind === "return" &&
+      hourMeter !== null &&
+      before?.hourMeter != null &&
+      hourMeter < before.hourMeter
+    )
+      errors[`readings.${i}.hourMeter`] = `Lower than at delivery (${before.hourMeter} h)`
+    const fuel = r.fuel as Fuel
+    if (!FUELS.includes(fuel)) errors[`readings.${i}.fuel`] = "Select the fuel level"
+    return {
+      itemId: it.id,
+      label: it.label,
+      qty: it.qty,
+      hourMeter: hourMeter === null ? null : round2(hourMeter),
+      fuel,
+      condition: trimmed(r.condition, 1000),
+    }
+  })
+  const signature = readSignature(data, user, errors)
+  if (Object.keys(errors).length || !signature) throw new ApiError(400, "Check the report", errors)
+  const report: HandoverReport = {
+    kind,
+    createdAt: signature.at,
+    readings,
+    notes: trimmed(data.notes, 2000),
+    photos,
+    partnerSignature: signature,
   }
-  if (typeof status !== "string" || !(allowed[order.status] ?? []).includes(status)) {
-    throw new ApiError(409, "Status change not allowed.")
-  }
-  order.status = status as Order["status"]
+  reports[kind] = report
+  order.status = kind === "delivery" ? "in_progress" : "completed"
   hist(
     order,
     actorLabel(store, user),
-    status === "in_progress"
-      ? "Machines delivered: rental in progress."
-      : "Machines collected: rental completed."
+    kind === "delivery"
+      ? `Machines delivered: delivery report signed as "${signature.name}". Rental in progress; awaiting the customer's countersignature.`
+      : `Machines collected: return report signed as "${signature.name}". Rental completed; awaiting the customer's countersignature.`
+  )
+  store.put("orders", order)
+  return order
+}
+
+export function clientSignReport(
+  store: Store,
+  user: User,
+  order: Order,
+  kind: string,
+  data: Body
+): Order {
+  const report =
+    kind === "delivery" || kind === "return" ? order.reports?.[kind as ReportKind] : undefined
+  if (!report) throw new ApiError(404, "Report not found")
+  if (report.clientSignature) throw new ApiError(409, "This report is already countersigned.")
+  const errors: Errors = {}
+  const signature = readSignature(data, user, errors)
+  if (!signature) throw new ApiError(400, "Sign the report", errors)
+  const remarks = trimmed(data.remarks, 2000)
+  report.clientSignature = { ...signature, remarks }
+  hist(
+    order,
+    actorLabel(store, user),
+    `${kind === "delivery" ? "Delivery" : "Return"} report countersigned by the customer as "${signature.name}"${remarks ? ` with remarks: ${remarks}` : ", without remarks."}`
+  )
+  store.put("orders", order)
+  return order
+}
+
+// ------------------------------------------------------------------ payments
+// Without the API there is no payment provider: requests are test payments,
+// issued at once and paid with a button.
+
+function commissionRate(store: Store, order: Order) {
+  const partner = store.get<Partner>("partners", order.partnerId)
+  const settings = store.get<Settings>("settings", "main")
+  const plans = settings?.plans ?? []
+  return (plans.find((p) => p.id === partner?.planId) ?? plans[0])?.commissionRate ?? 0
+}
+
+/** The order's payments overall; overdue is worked out from today's date. */
+export function paymentOverview(items: PaymentItem[]): Payment {
+  const day = today()
+  for (const i of items) if (i.status === "open" && i.dueDate < day) i.status = "overdue"
+  const unpaid = items.filter((i) => i.status !== "paid" && i.status !== "void")
+  const sum = (xs: PaymentItem[]) => round2(xs.reduce((s, i) => s + i.gross, 0))
+  return {
+    status: !items.length
+      ? "none"
+      : unpaid.some((i) => i.status === "overdue")
+        ? "overdue"
+        : unpaid.length
+          ? "due"
+          : "paid",
+    items,
+    dueGross: sum(unpaid),
+    paidGross: sum(items.filter((i) => i.status === "paid")),
+    nextDue: unpaid.map((i) => i.dueDate).sort()[0] ?? null,
+  }
+}
+
+function addPayment(
+  order: Order,
+  kind: PaymentItem["kind"],
+  refId: string,
+  description: string,
+  net: number,
+  rate: number
+) {
+  const vat = round2((net * VAT_RATE) / 100)
+  const id = newId("pay")
+  const fee = round2(net * rate)
+  const item: PaymentItem = {
+    id,
+    kind,
+    refId,
+    description,
+    net: round2(net),
+    vat,
+    gross: round2(net + vat),
+    dueDate: addDays(today(), PAYMENT_DAYS),
+    status: "open",
+    number: `TEST-${id.slice(-6).toUpperCase()}`,
+    paidAt: null,
+    test: true,
+    fee,
+    payout: round2(net + vat - fee),
+  }
+  order.payment = paymentOverview([...(order.payment?.items ?? []), item])
+}
+
+/** Client: pays a test payment request. */
+export function clientPay(store: Store, user: User, order: Order, id: string): Order {
+  const item = order.payment.items.find((i) => i.id === id)
+  if (!item) throw new ApiError(404, "Payment not found")
+  if (item.status === "paid") throw new ApiError(409, "Already paid.")
+  item.status = "paid"
+  item.paidAt = now()
+  order.payment = paymentOverview(order.payment.items)
+  hist(
+    order,
+    "Machina",
+    `Payment received: ${item.description} (${fmtEur(item.gross)}). Passed on to the rental company, less Machina's commission.`
   )
   store.put("orders", order)
   return order
@@ -949,55 +1157,6 @@ export function partnerUploadInvoice(
     actor,
     `Tax document no. ${inv.number} of ${inv.date} uploaded (${fmtEur(inv.amount)}). Issued with the partner's software; uploading it to Machina is not a submission to the SdI.`
   )
-  store.put("orders", order)
-  return order
-}
-
-export function clientDeclarePayment(store: Store, user: User, order: Order, data: Body): Order {
-  if (order.payment.status === "received")
-    throw new ApiError(409, "The partner has already confirmed receipt.")
-  const errors: Errors = {}
-  const amount = num(data.amount, "amount", errors, { minimum: 0.01 })
-  if (!validDate(data.date)) errors.date = "Date is required"
-  if (Object.keys(errors).length || amount === null)
-    throw new ApiError(400, "Check the payment details", errors)
-  const actor = actorLabel(store, user)
-  order.payment = {
-    status: "declared",
-    declared: {
-      amount: round2(amount),
-      date: data.date as string,
-      method: trimmed(data.method || "Bank transfer", 60),
-      note: trimmed(data.note, 300),
-      at: now(),
-      by: actor,
-    },
-  }
-  hist(
-    order,
-    actor,
-    `Payment declared by the customer: ${fmtEur(amount)} on ${data.date}. Awaiting the partner's confirmation of receipt.`
-  )
-  store.put("orders", order)
-  return order
-}
-
-export function partnerConfirmPayment(store: Store, user: User, order: Order, data: Body): Order {
-  if (order.payment.status === "received") throw new ApiError(409, "Receipt already confirmed.")
-  const errors: Errors = {}
-  const amount = num(data.amount, "amount", errors, { minimum: 0.01 })
-  if (!validDate(data.date)) errors.date = "Date is required"
-  if (Object.keys(errors).length || amount === null)
-    throw new ApiError(400, "Check the receipt details", errors)
-  const actor = actorLabel(store, user)
-  order.payment.status = "received"
-  order.payment.confirmed = {
-    amount: round2(amount),
-    date: data.date as string,
-    at: now(),
-    by: actor,
-  }
-  hist(order, actor, `Payment receipt confirmed by the partner: ${fmtEur(amount)} on ${data.date}.`)
   store.put("orders", order)
   return order
 }

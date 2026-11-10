@@ -183,12 +183,24 @@ function ownQuote(ctx: Ctx, id: string): Quote {
   return S.refreshQuote(ctx.store, q)
 }
 
-function orderView(store: Store, o: Order): OrderView {
+/** Orders saved before contracts and test payments get empty reports and payments. */
+function current(o: Order): Order {
+  return {
+    ...o,
+    reports: o.reports ?? {},
+    payment: S.paymentOverview(Array.isArray(o.payment?.items) ? o.payment.items : []),
+  }
+}
+
+function orderView(store: Store, order: Order): OrderView {
+  const o = current(order)
+  const filesOf = (ids: string[]) =>
+    ids.map((f) => store.fileMeta(f)).filter((f): f is FileMeta => f !== null)
   const out: OrderView = { ...o, summary: S.orderSummary(o) }
-  out.charges = o.charges.map((c) => ({
-    ...c,
-    files: c.attachments.map((f) => store.fileMeta(f)).filter((f): f is FileMeta => f !== null),
-  }))
+  out.charges = o.charges.map((c) => ({ ...c, files: filesOf(c.attachments) }))
+  out.reports = Object.fromEntries(
+    Object.entries(o.reports).map(([k, r]) => [k, { ...r, files: filesOf(r.photos) }])
+  )
   return out
 }
 
@@ -556,8 +568,10 @@ route("GET", "/api/client/summary", "client", (ctx) => {
         .filter((c) => c.status === "pending_approval").length,
       chargesToVerify: orders.flatMap((o) => o.charges).filter((c) => c.status === "pending_review")
         .length,
-      paymentsOpen: orders.filter((o) => o.payment.status === "unpaid" && o.status !== "cancelled")
-        .length,
+      paymentsOpen: orders.filter((o) => {
+        const p = current(o).payment.status
+        return p === "due" || p === "overdue"
+      }).length,
     },
     actions,
     recentOrders: orders
@@ -676,6 +690,10 @@ route("POST", "/api/client/requests", "client", (ctx) =>
 
 route("GET", "/api/client/quotes/([\\w-]+)", "client", (ctx, id) => ownQuote(ctx, id))
 
+route("GET", "/api/client/quotes/([\\w-]+)/contract", "client", (ctx, id) =>
+  S.quoteContract(ctx.store, ownQuote(ctx, id))
+)
+
 route(
   "POST",
   "/api/client/quotes/([\\w-]+)/(accept|reject|withdraw)",
@@ -750,9 +768,26 @@ route(
   }
 )
 
-route("POST", "/api/client/orders/([\\w-]+)/payment", "client", (ctx, id) =>
-  orderView(ctx.store, S.clientDeclarePayment(ctx.store, ctx.user!, ownOrder(ctx, id), ctx.body))
+route(
+  "POST",
+  "/api/client/orders/([\\w-]+)/reports/(delivery|return)/sign",
+  "client",
+  (ctx, id, kind) =>
+    orderView(
+      ctx.store,
+      S.clientSignReport(ctx.store, ctx.user!, ownOrder(ctx, id), kind, ctx.body)
+    )
 )
+
+route("POST", "/api/client/payments/([\\w-]+)/pay", "client", (ctx, id) => {
+  const cid = ctx.user!.clientId
+  const o = ctx.store
+    .find<Order>("orders", (x) => x.clientId === cid)
+    .find((x) => x.payment?.items?.some((i) => i.id === id))
+  if (!o) throw new ApiError(404, "Payment not found")
+  S.clientPay(ctx.store, ctx.user!, current(o), id)
+  return { paid: true, url: null }
+})
 
 route("GET", "/api/client/documents", "client", (ctx) => {
   const cid = ctx.user!.clientId
@@ -766,7 +801,7 @@ route("GET", "/api/client/documents", "client", (ctx) => {
       status: o.status,
       summary: S.orderSummary(o),
       invoices: o.invoices,
-      payment: o.payment,
+      payment: current(o).payment,
     }))
     .sort((a, b) => b.code.localeCompare(a.code))
   return { documents }
@@ -812,12 +847,6 @@ route("GET", "/api/partner/summary", "partner", (ctx) => {
           link,
         })
     }
-    if (o.payment.status === "declared")
-      actions.push({
-        kind: "payment",
-        text: `Payment declared on ${o.code}: confirm receipt`,
-        link,
-      })
     for (const n of o.notices) actions.push({ kind: "tax", text: `${o.code}: ${n.text}`, link })
   }
   return {
@@ -1489,8 +1518,26 @@ route("POST", "/api/partner/orders/([\\w-]+)/charges/([\\w-]+)", "partner", (ctx
   )
 })
 
-route("POST", "/api/partner/orders/([\\w-]+)/status", "partner", (ctx, id) =>
-  orderView(ctx.store, S.partnerSetStatus(ctx.store, ctx.user!, ownOrder(ctx, id), ctx.body.status))
+route(
+  "POST",
+  "/api/partner/orders/([\\w-]+)/reports/(delivery|return)",
+  "partner",
+  (ctx, id, kind) => {
+    const o = current(ownOrder(ctx, id))
+    const photos = (Array.isArray(ctx.body.photos) ? ctx.body.photos : [])
+      .slice(0, 8)
+      .map((up) =>
+        saveUpload(
+          ctx.store,
+          up,
+          { orderId: o.id, clientId: o.clientId, partnerId: o.partnerId, public: false },
+          ["image/jpeg", "image/png", "image/webp"]
+        )
+      )
+      .filter((m): m is FileMeta => m !== null)
+      .map((m) => m.id)
+    return orderView(ctx.store, S.partnerReport(ctx.store, ctx.user!, o, kind, ctx.body, photos))
+  }
 )
 
 route("POST", "/api/partner/orders/([\\w-]+)/invoices", "partner", (ctx, id) => {
@@ -1507,9 +1554,37 @@ route("POST", "/api/partner/orders/([\\w-]+)/invoices", "partner", (ctx, id) => 
   )
 })
 
-route("POST", "/api/partner/orders/([\\w-]+)/payment", "partner", (ctx, id) =>
-  orderView(ctx.store, S.partnerConfirmPayment(ctx.store, ctx.user!, ownOrder(ctx, id), ctx.body))
-)
+// Without the API there is no payment provider: payouts are always "set up".
+route("GET", "/api/partner/payouts", "partner", (ctx) => {
+  const pid = ctx.user!.partnerId
+  const payments = ctx.store
+    .find<Order>("orders", (o) => o.partnerId === pid)
+    .flatMap((o) =>
+      current(o).payment.items.map((i) => ({ ...i, orderId: o.id, orderCode: o.code }))
+    )
+    .sort((a, b) => b.dueDate.localeCompare(a.dueDate))
+  const sum = (f: (i: (typeof payments)[number]) => boolean) =>
+    payments.filter(f).reduce((s, i) => s + (i.payout ?? 0), 0)
+  return {
+    status: "active",
+    provider: "stub",
+    due: [],
+    totals: {
+      waiting: 0,
+      open: sum((i) => i.status === "open" || i.status === "overdue"),
+      paid: sum((i) => i.status === "paid"),
+    },
+    payments,
+  }
+})
+
+route("POST", "/api/partner/payouts/onboard", "partner", () => ({
+  url: "/supplier/payouts?from=stripe",
+}))
+
+route("POST", "/api/partner/payouts/dashboard", "partner", () => {
+  throw new ApiError(409, "Test payouts have no dashboard.")
+})
 
 route("GET", "/api/partner/documents", "partner", (ctx) => {
   const pid = ctx.user!.partnerId
@@ -1524,7 +1599,7 @@ route("GET", "/api/partner/documents", "partner", (ctx) => {
       summary: S.orderSummary(o),
       invoices: o.invoices,
       notices: o.notices,
-      payment: o.payment,
+      payment: current(o).payment,
     }))
     .sort((a, b) => b.code.localeCompare(a.code))
   return { documents }

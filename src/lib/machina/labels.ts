@@ -44,9 +44,11 @@ const TONES = {
     cancelled: "bad",
   } satisfies Record<OrderStatus, BadgeTone>,
   PAYMENT_STATUS: {
-    unpaid: "warn",
-    declared: "info",
-    received: "ok",
+    none: "neutral",
+    pending: "info",
+    due: "warn",
+    overdue: "bad",
+    paid: "ok",
   } satisfies Record<PaymentStatus, BadgeTone>,
   CHANGE_STATUS: {
     requested_by_client: "warn",
@@ -126,9 +128,11 @@ const TEXTS = defineMessages<Texts>({
       cancelled: "Cancelled",
     },
     PAYMENT_STATUS: {
-      unpaid: "Unpaid",
-      declared: "Payment declared by customer",
-      received: "Receipt confirmed by partner",
+      none: "No payment request",
+      pending: "Payment request being prepared",
+      due: "Payment due",
+      overdue: "Payment overdue",
+      paid: "Paid",
     },
     CHANGE_STATUS: {
       requested_by_client: "Awaiting partner's price",
@@ -234,9 +238,11 @@ const TEXTS = defineMessages<Texts>({
       cancelled: "Annullato",
     },
     PAYMENT_STATUS: {
-      unpaid: "Da pagare",
-      declared: "Pagamento dichiarato dal cliente",
-      received: "Incasso confermato dal noleggiatore",
+      none: "Nessuna richiesta di pagamento",
+      pending: "Richiesta di pagamento in preparazione",
+      due: "Da pagare",
+      overdue: "Pagamento scaduto",
+      paid: "Pagato",
     },
     CHANGE_STATUS: {
       requested_by_client: "In attesa del prezzo del noleggiatore",

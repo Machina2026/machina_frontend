@@ -16,7 +16,7 @@ import { Alert } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Check, Field } from "@/components/ui/field"
+import { Field } from "@/components/ui/field"
 import { Modal, ModalActions } from "@/components/ui/modal"
 import { Textarea } from "@/components/ui/textarea"
 import { api, ApiError } from "@/lib/machina/api"
@@ -24,7 +24,8 @@ import { useFormat, useMessages } from "@/i18n/client"
 import { useCommon } from "@/i18n/common"
 import { defineMessages } from "@/i18n/messages"
 import { useMeta } from "@/lib/machina/hooks"
-import type { Quote, RequestDetail, RequestOverview } from "@/lib/machina/types"
+import { ContractDocument, SignatureFields } from "@/features/orders/contract"
+import type { ContractTerms, Quote, RequestDetail, RequestOverview } from "@/lib/machina/types"
 
 const M = defineMessages({
   en: {
@@ -88,15 +89,16 @@ const M = defineMessages({
     periodSite: "Period and site",
     period: "Period",
     acceptedToast: "Quote accepted: order confirmed",
-    acceptTitle: (code: string, v: number) => `Accept quote ${code} v${v}`,
+    acceptTitle: (code: string, v: number) => `Accept quote ${code} v${v} and sign the contract`,
     net: "Net",
     vat: (rate: number) => `VAT ${rate}%`,
     total: "Total",
     acceptTerms:
-      "I have checked the lines, conditions and period. I accept the quote: the price will be locked and the order created.",
-    notPayment:
-      "A confirmed order is not a payment: you pay the rental company under the agreed terms.",
-    confirmAcceptance: "Confirm acceptance",
+      "I have read the rental contract above and accept it on behalf of my company. The price is locked and the order created.",
+    notPayment: (days: number) =>
+      `You pay Machina, which pays the rental company: a payment request follows, due within ${days} days.`,
+    confirmAcceptance: "Sign and accept",
+    contract: "Rental contract",
     rejectedToast: "Quote rejected",
     rejectTitle: "Reject quote",
     rejectReason: "Reason (optional, visible to the partner)",
@@ -163,15 +165,17 @@ const M = defineMessages({
     periodSite: "Periodo e cantiere",
     period: "Periodo",
     acceptedToast: "Preventivo accettato: ordine confermato",
-    acceptTitle: (code: string, v: number) => `Accetta il preventivo ${code} v${v}`,
+    acceptTitle: (code: string, v: number) =>
+      `Accetta il preventivo ${code} v${v} e firma il contratto`,
     net: "Imponibile",
     vat: (rate: number) => `IVA ${rate}%`,
     total: "Totale",
     acceptTerms:
-      "Ho verificato righe, condizioni e periodo. Accetto il preventivo: il prezzo sarà bloccato e l'ordine creato.",
-    notPayment:
-      "Un ordine confermato non è un pagamento: paghi il noleggiatore secondo le condizioni concordate.",
-    confirmAcceptance: "Conferma l'accettazione",
+      "Ho letto il contratto di noleggio qui sopra e lo accetto per conto della mia azienda. Il prezzo è bloccato e l'ordine creato.",
+    notPayment: (days: number) =>
+      `Paghi Machina, che paga il noleggiatore: seguirà una richiesta di pagamento, con scadenza entro ${days} giorni.`,
+    confirmAcceptance: "Firma e accetta",
+    contract: "Contratto di noleggio",
     rejectedToast: "Preventivo rifiutato",
     rejectTitle: "Rifiuta il preventivo",
     rejectReason: "Motivo (facoltativo, visibile al noleggiatore)",
@@ -557,12 +561,18 @@ function AcceptDialog({
   const c = useCommon()
   const { eur } = useFormat()
   const v = q.versions[q.versions.length - 1]
-  const [terms, setTerms] = useState(false)
+  const [confirmed, setConfirmed] = useState(false)
+  const [name, setName] = useState("")
+  const contract = useQuery({
+    queryKey: ["buyer", "quote", q.id, "contract", v.n],
+    queryFn: () => api.get<ContractTerms>(`/api/client/quotes/${q.id}/contract`),
+  })
   const accept = useMutation({
     mutationFn: () =>
       api.post<{ orderId: string }>(`/api/client/quotes/${q.id}/accept`, {
         version: v.n,
-        acceptTerms: terms,
+        signatureName: name,
+        confirm: confirmed,
       }),
     onSuccess: (r) => {
       toast.success(t.acceptedToast)
@@ -576,9 +586,9 @@ function AcceptDialog({
       }
     },
   })
-  const fieldError = accept.error instanceof ApiError ? accept.error.fields.acceptTerms : undefined
+  const fields = accept.error instanceof ApiError ? accept.error.fields : {}
   return (
-    <Modal open onOpenChange={(o) => !o && onClose()} title={t.acceptTitle(q.code, v.n)}>
+    <Modal open wide onOpenChange={(o) => !o && onClose()} title={t.acceptTitle(q.code, v.n)}>
       <table className="w-full text-[0.95rem]">
         <tbody>
           <tr>
@@ -595,24 +605,31 @@ function AcceptDialog({
           </tr>
         </tbody>
       </table>
+      <h3 className="mt-4 mb-1.5">{t.contract}</h3>
+      <div className="bg-muted/40 mb-3 max-h-[32vh] overflow-y-auto rounded-lg border p-3.5">
+        <QueryView query={contract}>
+          {(terms) => <ContractDocument terms={terms} compact />}
+        </QueryView>
+      </div>
       <form
-        className="mt-3"
         onSubmit={(e) => {
           e.preventDefault()
           accept.mutate()
         }}
       >
-        <Field label="" error={fieldError}>
-          <Check
-            checked={terms}
-            onChange={(e) => setTerms(e.target.checked)}
-            label={t.acceptTerms}
-          />
-        </Field>
-        <Small>{t.notPayment}</Small>
+        <SignatureFields
+          idPrefix="accept"
+          name={name}
+          onName={setName}
+          confirmed={confirmed}
+          onConfirmed={setConfirmed}
+          confirmLabel={t.acceptTerms}
+          fields={fields}
+        />
+        <Small>{t.notPayment(contract.data?.paymentDays ?? 30)}</Small>
         <ModalActions>
           <Button onClick={onClose}>{c.cancel}</Button>
-          <Button type="submit" variant="ok" disabled={accept.isPending}>
+          <Button type="submit" variant="ok" disabled={accept.isPending || !contract.data}>
             {t.confirmAcceptance}
           </Button>
         </ModalActions>

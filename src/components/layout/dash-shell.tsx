@@ -18,6 +18,7 @@ import {
   Truck,
   UserRound,
   Users,
+  Wallet,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -103,6 +104,7 @@ function useSupplierMenu(): MenuItem[] {
       count: c ? c.changesOpen + c.chargesContested : undefined,
     },
     { href: "/supplier/documents", label: t.partnerDocuments, icon: FileUp },
+    { href: "/supplier/payouts", label: t.payouts, icon: Wallet },
     { href: "/supplier/commissions", label: t.commissions, icon: BadgePercent },
     { href: "/supplier/profile", label: t.companyProfile, icon: UserRound },
   ]

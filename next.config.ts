@@ -28,6 +28,8 @@ const API_ROUTES = [
   "partner/orders",
   "partner/documents",
   "partner/commissions",
+  "partner/payouts",
+  "payments",
 ]
 
 const nextConfig: NextConfig = {

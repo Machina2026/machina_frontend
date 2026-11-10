@@ -15,7 +15,9 @@ export type QuoteStatus =
   | "expired"
   | "withdrawn"
 export type OrderStatus = "confirmed" | "in_progress" | "completed" | "cancelled"
-export type PaymentStatus = "unpaid" | "declared" | "received"
+/** An order's payments overall. */
+export type PaymentStatus = "none" | "pending" | "due" | "overdue" | "paid"
+export type PaymentItemStatus = "pending" | "open" | "overdue" | "paid" | "void" | "uncollectible"
 export type ChangeKind = "extension" | "accessory" | "service"
 export type ChangeStatus =
   "requested_by_client" | "pending_approval" | "accepted" | "rejected" | "declined_by_partner"
@@ -393,10 +395,92 @@ export type Invoice = {
   note: string
 }
 
+/** A payment request: the customer pays Machina, which passes it on to the rental company. */
+export type PaymentItem = {
+  id: string
+  kind: "rental" | "change" | "charge"
+  /** The change or charge id; "" for the rental. */
+  refId: string
+  description: string
+  net: number
+  vat: number
+  gross: number
+  dueDate: string
+  status: PaymentItemStatus
+  number: string | null
+  paidAt: string | null
+  /** Made-up payment (no payment provider configured): paid with a test button. */
+  test: boolean
+  /** Supplier view only: Machina's commission and what the rental company receives. */
+  fee?: number
+  payout?: number
+  /** Client view only. */
+  pdfUrl?: string | null
+}
+
 export type Payment = {
   status: PaymentStatus
-  declared?: { amount: number; date: string; method: string; note: string; at: string; by: string }
-  confirmed?: { amount: number; date: string; at: string; by: string }
+  items: PaymentItem[]
+  dueGross: number
+  paidGross: number
+  nextDue: string | null
+}
+
+/** A simple electronic signature: the name typed, the account, when and from where. */
+export type Signature = { name: string; userId: string; userName: string; at: string; ip: string }
+
+export type ContractParty = {
+  name: string
+  vat: string
+  address: string
+  city: string
+  province: string
+  email: string
+  pec: string
+}
+export type ContractClause = { title: string; body: string }
+
+export type ContractTerms = {
+  template: string
+  lessor: ContractParty
+  customer: ContractParty
+  quoteCode: string
+  version: number
+  offeredBy: string
+  offeredAt: string
+  period: Period
+  site: SiteRef
+  items: { label: string; qty: number }[]
+  lines: Line[]
+  totals: Totals
+  paymentDays: number
+  paymentDue: string
+  clauses: { en: ContractClause[]; it: ContractClause[] }
+}
+
+export type Contract = ContractTerms & { id: string; hash: string; signature: Signature }
+
+export type Fuel = "empty" | "quarter" | "half" | "three_quarters" | "full" | "not_applicable"
+export type ReportKind = "delivery" | "return"
+
+export type Reading = {
+  itemId: string
+  label: string
+  qty: number
+  hourMeter: number | null
+  fuel: Fuel
+  condition: string
+}
+
+export type HandoverReport = {
+  kind: ReportKind
+  createdAt: string
+  readings: Reading[]
+  notes: string
+  photos: string[]
+  partnerSignature: Signature
+  clientSignature?: Signature & { remarks: string }
+  files?: FileMeta[]
 }
 
 export type Notice = { at: string; text: string; changeId?: string }
@@ -428,6 +512,9 @@ export type Order = {
   charges: OrderCharge[]
   invoices: Invoice[]
   notices: Notice[]
+  /** Missing on orders made before contracts were signed in the app. */
+  contract?: Contract
+  reports: { delivery?: HandoverReport; return?: HandoverReport }
   payment: Payment
   history: HistoryEntry[]
 }
@@ -534,7 +621,10 @@ export type ClientSummary = {
   recentOrders: (Order & { summary: OrderSummary })[]
 }
 
+export type PayoutStatus = "none" | "onboarding" | "active" | "restricted"
+
 export type PartnerSummary = {
+  payoutStatus?: PayoutStatus
   counts: {
     newRequests: number
     awaitingClient: number
@@ -841,4 +931,14 @@ export type InvitationPreview = {
   companyRole: CompanyRole | null
   company: { name: string; type: CompanyType } | null
   expiresAt: string
+}
+
+export type PayoutItem = PaymentItem & { orderId: string; orderCode: string }
+export type PayoutsResponse = {
+  status: PayoutStatus
+  provider: "stripe" | "stub"
+  /** Details Stripe still needs (field names), after a refresh. */
+  due: string[]
+  totals: { waiting: number; open: number; paid: number }
+  payments: PayoutItem[]
 }

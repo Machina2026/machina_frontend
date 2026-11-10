@@ -17,9 +17,6 @@ import { addDays, daysBetween, today } from "@/lib/machina/format"
 import { useLabels } from "@/lib/machina/labels"
 import type { ChangeKind, OrderChange, OrderCharge, OrderView } from "@/lib/machina/types"
 
-/** Payment methods as stored on the order, with their label in each language. */
-const PAYMENT_METHODS = ["Bank transfer", "Bank receipt (RiBa)", "Cheque", "Other"] as const
-
 const M = defineMessages({
   en: {
     requestChange: "Request a change",
@@ -75,22 +72,6 @@ const M = defineMessages({
     file: "File (PDF or XML, max 5 MB)",
     notes: "Notes",
     uploadDocument: "Upload document",
-    declareTitle: "Declare payment",
-    declareHint:
-      "You pay the rental company directly. The partner confirms your declaration when the money arrives.",
-    amountPaid: "Amount paid (€)",
-    method: "Method",
-    methods: {
-      "Bank transfer": "Bank transfer",
-      "Bank receipt (RiBa)": "Bank receipt (RiBa)",
-      Cheque: "Cheque",
-      Other: "Other",
-    } as Record<string, string>,
-    paymentNotes: "Notes (e.g. transfer reference)",
-    declare: "Declare payment",
-    confirmTitle: "Confirm receipt",
-    amountReceived: "Amount received (€)",
-    dateReceived: "Date received",
   },
   it: {
     requestChange: "Richiedi una modifica",
@@ -145,40 +126,18 @@ const M = defineMessages({
     file: "File (PDF o XML, max 5 MB)",
     notes: "Note",
     uploadDocument: "Carica il documento",
-    declareTitle: "Dichiara il pagamento",
-    declareHint:
-      "Paghi direttamente il noleggiatore. Il noleggiatore conferma la tua dichiarazione quando riceve il denaro.",
-    amountPaid: "Importo pagato (€)",
-    method: "Metodo",
-    methods: {
-      "Bank transfer": "Bonifico bancario",
-      "Bank receipt (RiBa)": "Ricevuta bancaria (RiBa)",
-      Cheque: "Assegno",
-      Other: "Altro",
-    } as Record<string, string>,
-    paymentNotes: "Note (es. riferimento del bonifico)",
-    declare: "Dichiara il pagamento",
-    confirmTitle: "Conferma l'incasso",
-    amountReceived: "Importo ricevuto (€)",
-    dateReceived: "Data di ricezione",
   },
 })
-
-/** A stored payment method in the current language. */
-export function usePaymentMethodLabel() {
-  const t = useMessages(M)
-  return (method: string) => t.methods[method] ?? method
-}
 
 const bold = (s: string) => <b>{s}</b>
 
 /** Submit handler: resolves on success, throws ApiError (with field errors) on failure. */
 export type Submit = (body: Record<string, unknown>) => Promise<unknown>
 
-type DialogProps = { order: OrderView; onClose: () => void; submit: Submit }
+export type DialogProps = { order: OrderView; onClose: () => void; submit: Submit }
 
 /** Shared submit state: busy flag, field errors and the general error message. */
-function useSubmit(submit: Submit, onClose: () => void) {
+export function useSubmit(submit: Submit, onClose: () => void) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<ApiError | null>(null)
   const run = async (body: Record<string, unknown> | (() => Promise<Record<string, unknown>>)) => {
@@ -196,7 +155,13 @@ function useSubmit(submit: Submit, onClose: () => void) {
   return { busy, run, fields: error?.fields ?? {}, message: error?.message }
 }
 
-function ErrorLine({ message, fields }: { message?: string; fields: Record<string, string> }) {
+export function ErrorLine({
+  message,
+  fields,
+}: {
+  message?: string
+  fields: Record<string, string>
+}) {
   if (!message) return null
   const extra = Object.values(fields)
   return (
@@ -686,112 +651,6 @@ export function InvoiceDialog({ order: o, onClose, submit }: DialogProps) {
           <Button onClick={onClose}>{c.cancel}</Button>
           <Button type="submit" variant="primary" disabled={s.busy}>
             {t.uploadDocument}
-          </Button>
-        </ModalActions>
-      </form>
-    </Modal>
-  )
-}
-
-export function DeclarePaymentDialog({ order: o, onClose, submit }: DialogProps) {
-  const t = useMessages(M)
-  const c = useCommon()
-  const s = useSubmit(submit, onClose)
-  const [f, setF] = useState({
-    amount: o.summary.agreedGross.toFixed(2),
-    date: today(),
-    method: PAYMENT_METHODS[0] as string,
-    note: "",
-  })
-  return (
-    <Modal
-      open
-      onOpenChange={(v) => !v && onClose()}
-      title={t.declareTitle}
-      description={t.declareHint}
-    >
-      <form onSubmit={(e) => (e.preventDefault(), s.run(f))}>
-        <ErrorLine message={s.message} fields={{}} />
-        <div className="grid gap-x-3.5 sm:grid-cols-2">
-          <Field label={t.amountPaid} htmlFor="dp-amount" error={s.fields.amount}>
-            <Input
-              id="dp-amount"
-              type="number"
-              min={0.01}
-              step={0.01}
-              value={f.amount}
-              onChange={(e) => setF({ ...f, amount: e.target.value })}
-            />
-          </Field>
-          <Field label={t.date} htmlFor="dp-date" error={s.fields.date}>
-            <Input
-              id="dp-date"
-              type="date"
-              value={f.date}
-              onChange={(e) => setF({ ...f, date: e.target.value })}
-            />
-          </Field>
-          <Field label={t.method} htmlFor="dp-method">
-            <Select
-              id="dp-method"
-              value={f.method}
-              onChange={(e) => setF({ ...f, method: e.target.value })}
-              options={PAYMENT_METHODS.map((m) => [m, t.methods[m]] as const)}
-            />
-          </Field>
-          <Field label={t.paymentNotes} htmlFor="dp-note">
-            <Input
-              id="dp-note"
-              value={f.note}
-              onChange={(e) => setF({ ...f, note: e.target.value })}
-            />
-          </Field>
-        </div>
-        <ModalActions>
-          <Button onClick={onClose}>{c.cancel}</Button>
-          <Button type="submit" variant="primary" disabled={s.busy}>
-            {t.declare}
-          </Button>
-        </ModalActions>
-      </form>
-    </Modal>
-  )
-}
-
-export function ConfirmPaymentDialog({ order: o, onClose, submit }: DialogProps) {
-  const t = useMessages(M)
-  const c = useCommon()
-  const s = useSubmit(submit, onClose)
-  const amount = o.payment.declared?.amount ?? o.summary.agreedGross
-  const [f, setF] = useState({ amount: amount.toFixed(2), date: today() })
-  return (
-    <Modal open onOpenChange={(v) => !v && onClose()} title={t.confirmTitle}>
-      <form onSubmit={(e) => (e.preventDefault(), s.run(f))}>
-        <ErrorLine message={s.message} fields={{}} />
-        <div className="grid gap-x-3.5 sm:grid-cols-2">
-          <Field label={t.amountReceived} htmlFor="cp-amount" error={s.fields.amount}>
-            <Input
-              id="cp-amount"
-              type="number"
-              min={0.01}
-              step={0.01}
-              value={f.amount}
-              onChange={(e) => setF({ ...f, amount: e.target.value })}
-            />
-          </Field>
-          <Field label={t.dateReceived} htmlFor="cp-date" error={s.fields.date}>
-            <Input
-              id="cp-date"
-              type="date"
-              value={f.date}
-              onChange={(e) => setF({ ...f, date: e.target.value })}
-            />
-          </Field>
-        </div>
-        <ModalActions>
-          <Button onClick={onClose}>{c.cancel}</Button>
-          <Button type="submit" variant="ok" disabled={s.busy}>
-            {t.confirmTitle}
           </Button>
         </ModalActions>
       </form>

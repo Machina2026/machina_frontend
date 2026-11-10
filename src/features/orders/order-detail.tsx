@@ -18,21 +18,21 @@ import { Card, CardHead } from "@/components/ui/card"
 import { api, downloadFile } from "@/lib/machina/api"
 import { useFormat, useMessages } from "@/i18n/client"
 import { defineMessages } from "@/i18n/messages"
+import { today } from "@/lib/machina/format"
 import { useLabels } from "@/lib/machina/labels"
-import type { OrderChange, OrderCharge, OrderView, Role } from "@/lib/machina/types"
+import type { OrderChange, OrderCharge, OrderView, ReportKind, Role } from "@/lib/machina/types"
 
+import { ReportDialog, ReportsCard, SignReportDialog } from "./handover"
 import {
   ChargeDialog,
   ChargeReviseDialog,
   ClientChangeDialog,
-  ConfirmPaymentDialog,
-  DeclarePaymentDialog,
   InvoiceDialog,
   PartnerChangeDialog,
   ReasonDialog,
   type Submit,
-  usePaymentMethodLabel,
 } from "./order-dialogs"
+import { PaymentCard } from "./payments"
 
 type Dialog =
   | { kind: "change" }
@@ -43,15 +43,20 @@ type Dialog =
   | { kind: "charge" }
   | { kind: "revise-charge"; charge: OrderCharge }
   | { kind: "invoice" }
-  | { kind: "declare-payment" }
-  | { kind: "confirm-payment" }
+  | { kind: "report"; report: ReportKind }
+  | { kind: "sign-report"; report: ReportKind }
 
 const M = defineMessages({
   en: {
-    markDelivered: "Mark machines delivered",
-    markCompleted: "Mark rental completed",
-    updateStatus: "Update the status?",
-    statusUpdated: "Status updated",
+    recordDelivery: "Record delivery",
+    recordCollection: "Record collection",
+    reportRecorded: "Report signed and recorded",
+    reportSigned: "Report countersigned",
+    contract: "Rental contract",
+    contractSigned: (name: string, at: string) => `Signed by "${name}" on ${at}`,
+    contractDue: (days: number, due: string) => `Payment within ${days} days (by ${due})`,
+    openContract: "Open the contract",
+    noContract: "Confirmed before contracts were signed in Machina.",
     orders: "Orders",
     orderTitle: (code: string) => `Order ${code}`,
     invoiceUploaded: "Invoice uploaded",
@@ -142,21 +147,6 @@ const M = defineMessages({
     disputedCharges: (amount: string) => `Disputed charges: ${amount} + VAT`,
     priceLocked: (quote: string, v: number, at: string, by: string) =>
       `🔒 Price locked: ${quote} v${v} accepted on ${at} by ${by}.`,
-    payment: "Payment",
-    paymentIntro:
-      "In this MVP the customer pays the rental company directly under the agreed terms. A confirmed order is not a paid order.",
-    declaredBy: (amount: React.ReactNode, on: string, method: string) => (
-      <>
-        Declared by the customer: {amount} on {on} ({method})
-      </>
-    ),
-    confirmedBy: (amount: React.ReactNode, on: string) => (
-      <>
-        Receipt confirmed by the partner: {amount} on {on}
-      </>
-    ),
-    declarePayment: "Declare payment made",
-    confirmReceipt: "Confirm receipt",
     changeSent: "Change sent to the customer for approval",
     requestSent: "Request sent to the partner",
     declineTitle: "Don't accept the change request",
@@ -173,23 +163,31 @@ const M = defineMessages({
     chargeRecorded: "Charge recorded",
     chargeRevised: "Charge revised",
     docUploaded: "Document uploaded and visible to the customer",
-    paymentDeclared: "Payment declared",
-    receiptConfirmed: "Receipt confirmed",
     attnApprove: (code: string, kind: string, amount: string) =>
       `Approve or reject ${code} (${kind}, ${amount} + VAT)`,
     attnReviewCharge: (code: string, amount: string) => `Review charge ${code} (${amount} + VAT)`,
-    attnDeclare: "The invoice is uploaded: declare your payment once made",
+    attnSign: (report: string) => `Countersign the ${report}`,
+    attnPay: (amount: string, due: string) => `Pay ${amount} by ${due}`,
+    attnOverdue: (amount: string) => `Payment of ${amount} is overdue`,
     attnPrice: (code: string) => `Price the customer's request ${code}`,
     attnDisputed: (code: string) => `${code} was disputed: revise or withdraw it`,
-    attnConfirm: "The customer declared a payment: confirm receipt",
+    attnDelivery: "Record the delivery report when you hand the machines over",
+    attnPayouts: "Set up payouts so the customer can be billed",
+    deliveryReport: "delivery report",
+    returnReport: "return report",
     attnInvoice: "Rental completed: upload the final invoice",
     needsAttention: "Needs your attention",
   },
   it: {
-    markDelivered: "Segna le macchine come consegnate",
-    markCompleted: "Segna il noleggio come concluso",
-    updateStatus: "Aggiornare lo stato?",
-    statusUpdated: "Stato aggiornato",
+    recordDelivery: "Registra la consegna",
+    recordCollection: "Registra il ritiro",
+    reportRecorded: "Verbale firmato e registrato",
+    reportSigned: "Verbale controfirmato",
+    contract: "Contratto di noleggio",
+    contractSigned: (name: string, at: string) => `Firmato da "${name}" il ${at}`,
+    contractDue: (days: number, due: string) => `Pagamento entro ${days} giorni (entro il ${due})`,
+    openContract: "Apri il contratto",
+    noContract: "Confermato prima che i contratti si firmassero su Machina.",
     orders: "Ordini",
     orderTitle: (code: string) => `Ordine ${code}`,
     invoiceUploaded: "Fattura caricata",
@@ -280,21 +278,6 @@ const M = defineMessages({
     disputedCharges: (amount: string) => `Addebiti contestati: ${amount} + IVA`,
     priceLocked: (quote: string, v: number, at: string, by: string) =>
       `🔒 Prezzo bloccato: ${quote} v${v} accettato il ${at} da ${by}.`,
-    payment: "Pagamento",
-    paymentIntro:
-      "In questo MVP il cliente paga direttamente il noleggiatore secondo le condizioni concordate. Un ordine confermato non è un ordine pagato.",
-    declaredBy: (amount: React.ReactNode, on: string, method: string) => (
-      <>
-        Dichiarato dal cliente: {amount} il {on} ({method})
-      </>
-    ),
-    confirmedBy: (amount: React.ReactNode, on: string) => (
-      <>
-        Incasso confermato dal noleggiatore: {amount} il {on}
-      </>
-    ),
-    declarePayment: "Dichiara il pagamento effettuato",
-    confirmReceipt: "Conferma l'incasso",
     changeSent: "Modifica inviata al cliente per l'approvazione",
     requestSent: "Richiesta inviata al noleggiatore",
     declineTitle: "Non accettare la richiesta di modifica",
@@ -311,16 +294,19 @@ const M = defineMessages({
     chargeRecorded: "Addebito registrato",
     chargeRevised: "Addebito rivisto",
     docUploaded: "Documento caricato e visibile al cliente",
-    paymentDeclared: "Pagamento dichiarato",
-    receiptConfirmed: "Incasso confermato",
     attnApprove: (code: string, kind: string, amount: string) =>
       `Approva o rifiuta ${code} (${kind}, ${amount} + IVA)`,
     attnReviewCharge: (code: string, amount: string) =>
       `Verifica l'addebito ${code} (${amount} + IVA)`,
-    attnDeclare: "La fattura è caricata: dichiara il pagamento quando l'hai effettuato",
+    attnSign: (report: string) => `Controfirma il ${report}`,
+    attnPay: (amount: string, due: string) => `Paga ${amount} entro il ${due}`,
+    attnOverdue: (amount: string) => `Il pagamento di ${amount} è scaduto`,
     attnPrice: (code: string) => `Quota la richiesta del cliente ${code}`,
     attnDisputed: (code: string) => `${code} è stato contestato: rivedilo o ritiralo`,
-    attnConfirm: "Il cliente ha dichiarato un pagamento: conferma l'incasso",
+    attnDelivery: "Registra il verbale di consegna quando consegni le macchine",
+    attnPayouts: "Configura gli incassi per poter fatturare il cliente",
+    deliveryReport: "verbale di consegna",
+    returnReport: "verbale di riconsegna",
     attnInvoice: "Noleggio concluso: carica la fattura finale",
     needsAttention: "Richiede la tua attenzione",
   },
@@ -334,7 +320,6 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
   const t = useMessages(M)
   const L = useLabels()
   const { date, dateTime, eur, num } = useFormat()
-  const methodLabel = usePaymentMethodLabel()
   const qc = useQueryClient()
   const confirm = useConfirm()
   const [dialog, setDialog] = useState<Dialog | null>(null)
@@ -373,18 +358,15 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
         const prolonged = o.period.to !== o.originalPeriod.to
         const active = o.status === "confirmed" || o.status === "in_progress"
 
+        const nextReport: ReportKind | null =
+          o.status === "confirmed" ? "delivery" : o.status === "in_progress" ? "return" : null
         const statusAction =
-          role === "partner" && (o.status === "confirmed" || o.status === "in_progress") ? (
+          role === "partner" && nextReport ? (
             <Button
-              onClick={async () => {
-                const next = o.status === "confirmed" ? "in_progress" : "completed"
-                const label = next === "in_progress" ? t.markDelivered : t.markCompleted
-                if (await confirm({ title: t.updateStatus, body: `${label}.` })) {
-                  await quick("/status", { status: next }, t.statusUpdated)
-                }
-              }}
+              variant="primary"
+              onClick={() => setDialog({ kind: "report", report: nextReport })}
             >
-              {o.status === "confirmed" ? t.markDelivered : t.markCompleted}
+              {nextReport === "delivery" ? t.recordDelivery : t.recordCollection}
             </Button>
           ) : null
 
@@ -445,6 +427,14 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
                     </details>
                   )}
                 </Card>
+
+                <ReportsCard
+                  order={o}
+                  role={role}
+                  onRecord={(report) => setDialog({ kind: "report", report })}
+                  onSign={(report) => setDialog({ kind: "sign-report", report })}
+                  openFile={open}
+                />
 
                 <Card id="changes" className="scroll-mt-24">
                   <CardHead
@@ -844,54 +834,31 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
                   </Small>
                 </Card>
 
-                <Card id="payment" className="scroll-mt-24">
-                  <h3>{t.payment}</h3>
-                  <Small className="mb-2">{t.paymentIntro}</Small>
-                  <div className="mb-2">
-                    <StatusBadge kind="payment" status={o.payment.status} />
-                  </div>
-                  {o.payment.declared && (
-                    <p className="text-sm">
-                      {t.declaredBy(
-                        <b>{eur(o.payment.declared.amount)}</b>,
-                        date(o.payment.declared.date),
-                        methodLabel(o.payment.declared.method)
-                      )}
-                      {o.payment.declared.note && (
-                        <>
-                          <br />
-                          {o.payment.declared.note}
-                        </>
-                      )}
-                    </p>
-                  )}
-                  {o.payment.confirmed && (
-                    <p className="text-sm">
-                      {t.confirmedBy(
-                        <b>{eur(o.payment.confirmed.amount)}</b>,
-                        date(o.payment.confirmed.date)
-                      )}
-                    </p>
-                  )}
-                  {role === "client" &&
-                    o.payment.status === "unpaid" &&
-                    o.status !== "cancelled" && (
-                      <Button block onClick={() => setDialog({ kind: "declare-payment" })}>
-                        {t.declarePayment}
-                      </Button>
-                    )}
-                  {role === "partner" &&
-                    o.payment.status !== "received" &&
-                    o.status !== "cancelled" && (
-                      <Button
-                        block
-                        variant={o.payment.status === "declared" ? "ok" : "default"}
-                        onClick={() => setDialog({ kind: "confirm-payment" })}
+                <Card>
+                  <h3>{t.contract}</h3>
+                  {o.contract ? (
+                    <>
+                      <Small>
+                        {t.contractSigned(
+                          o.contract.signature.name,
+                          dateTime(o.contract.signature.at)
+                        )}
+                        <br />
+                        {t.contractDue(o.contract.paymentDays, date(o.contract.paymentDue))}
+                      </Small>
+                      <Link
+                        href={`${area}/orders/${o.id}/contract`}
+                        className={buttonVariants({ size: "sm", block: true, className: "mt-2.5" })}
                       >
-                        {t.confirmReceipt}
-                      </Button>
-                    )}
+                        {t.openContract}
+                      </Link>
+                    </>
+                  ) : (
+                    <Small>{t.noContract}</Small>
+                  )}
                 </Card>
+
+                <PaymentCard order={o} role={role} queryKey={orderKey(role, id)} />
               </aside>
             </div>
 
@@ -965,18 +932,20 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
                 submit={submitTo("/invoices", t.docUploaded)}
               />
             )}
-            {dialog?.kind === "declare-payment" && (
-              <DeclarePaymentDialog
+            {dialog?.kind === "report" && (
+              <ReportDialog
                 order={o}
+                kind={dialog.report}
                 onClose={() => setDialog(null)}
-                submit={submitTo("/payment", t.paymentDeclared)}
+                submit={submitTo(`/reports/${dialog.report}`, t.reportRecorded)}
               />
             )}
-            {dialog?.kind === "confirm-payment" && (
-              <ConfirmPaymentDialog
+            {dialog?.kind === "sign-report" && (
+              <SignReportDialog
                 order={o}
+                kind={dialog.report}
                 onClose={() => setDialog(null)}
-                submit={submitTo("/payment", t.receiptConfirmed)}
+                submit={submitTo(`/reports/${dialog.report}/sign`, t.reportSigned)}
               />
             )}
           </>
@@ -990,7 +959,7 @@ export function OrderDetail({ id, role }: { id: string; role: Role }) {
 function AttentionBanner({ order: o, role }: { order: OrderView; role: Role }) {
   const t = useMessages(M)
   const L = useLabels()
-  const { eur } = useFormat()
+  const { date, eur } = useFormat()
   const items: { text: string; href: string }[] = []
   if (role === "client") {
     for (const ch of o.changes) {
@@ -1008,11 +977,20 @@ function AttentionBanner({ order: o, role }: { order: OrderView; role: Role }) {
       if (ch.status === "pending_review")
         items.push({ text: t.attnReviewCharge(ch.code, eur(ch.amount)), href: "#charges" })
     }
-    if (o.payment.status === "unpaid" && o.invoices.length)
-      items.push({
-        text: t.attnDeclare,
-        href: "#payment",
-      })
+    for (const kind of ["delivery", "return"] as const) {
+      const r = o.reports[kind]
+      if (r && !r.clientSignature)
+        items.push({
+          text: t.attnSign(kind === "delivery" ? t.deliveryReport : t.returnReport),
+          href: "#reports",
+        })
+    }
+    for (const p of o.payment.items) {
+      if (p.status === "overdue")
+        items.push({ text: t.attnOverdue(eur(p.gross)), href: "#payment" })
+      if (p.status === "open")
+        items.push({ text: t.attnPay(eur(p.gross), date(p.dueDate)), href: "#payment" })
+    }
   } else {
     for (const ch of o.changes) {
       if (ch.status === "requested_by_client")
@@ -1021,7 +999,10 @@ function AttentionBanner({ order: o, role }: { order: OrderView; role: Role }) {
     for (const ch of o.charges) {
       if (ch.status === "disputed") items.push({ text: t.attnDisputed(ch.code), href: "#charges" })
     }
-    if (o.payment.status === "declared") items.push({ text: t.attnConfirm, href: "#payment" })
+    if (o.status === "confirmed" && o.period.from <= today())
+      items.push({ text: t.attnDelivery, href: "#reports" })
+    if (o.payment.items.some((p) => p.status === "pending"))
+      items.push({ text: t.attnPayouts, href: "/supplier/payouts" })
     if (o.status === "completed" && !o.invoices.length)
       items.push({ text: t.attnInvoice, href: "#documents" })
   }

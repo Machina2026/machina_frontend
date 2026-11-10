@@ -106,7 +106,7 @@ const M = defineMessages({
     hypothetical: "Hypothetical values",
     hypotheticalNote: null as string | null,
     machinaInvoicing:
-      "Machina will invoice the rental company for commissions and the subscription: Machina invoicing is not implemented yet.",
+      "The commission is kept from each customer payment before it is passed on to you (see Payouts). Invoicing the subscription is not implemented yet.",
     planName: (name: string) => `${name} plan`,
     planDescriptions: {} as Record<string, string>,
     active: "active",
@@ -190,7 +190,7 @@ const M = defineMessages({
     hypotheticalNote:
       "Ipotesi dimostrative: percentuali e canoni non sono decisioni commerciali definitive.",
     machinaInvoicing:
-      "Machina fatturerà al noleggiatore commissioni e abbonamento: la fatturazione Machina non è ancora implementata.",
+      "La commissione è trattenuta da ogni pagamento del cliente prima che ti venga versato (vedi Incassi). La fatturazione dell'abbonamento non è ancora implementata.",
     planName: (name: string) => `Piano ${name}`,
     planDescriptions: {
       base: "Nessun canone mensile, commissione sugli ordini confermati.",

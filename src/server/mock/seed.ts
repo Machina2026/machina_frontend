@@ -1,11 +1,13 @@
 import type {
   Accessory,
   Client,
+  Fuel,
   Line,
   Model,
   Offer,
   OfferAccessory,
   OperatorMode,
+  Order,
   Partner,
   Quote,
   RentalRequest,
@@ -838,6 +840,15 @@ export function tinyPdf(text: string): Buffer {
   return Buffer.from(out, "latin1")
 }
 
+/** A handover report's form: the same reading for every machine, signed by `user`. */
+function signedReport(user: User, order: Order, hourMeter: number, fuel: Fuel, condition: string) {
+  return {
+    readings: order.items.map((it) => ({ itemId: it.id, hourMeter, fuel, condition })),
+    signatureName: user.name,
+    confirm: true,
+  }
+}
+
 function backdate(doc: { history: { at: string }[] }, dayOffset: number) {
   doc.history.forEach((h, i) => (h.at = timestampAt(dayOffset, 9 + Math.min(i, 8))))
 }
@@ -942,14 +953,28 @@ export function seed(store: Store) {
   q2 = approve(q2, users["u-p1"], 30)
   const accepted = S.clientAccept(store, users["u-c1"], q2, {
     version: q2.currentVersion,
-    acceptTerms: true,
+    signatureName: users["u-c1"].name,
+    confirm: true,
   })
   const r2Doc = store.get<RentalRequest>("requests", r2.id)!
   backdate(r2Doc, -14)
   store.put("requests", r2Doc)
   backdate(accepted.quote, -13)
   store.put("quotes", accepted.quote)
-  let o1 = S.partnerSetStatus(store, users["u-p1"], accepted.order, "in_progress")
+  let o1 = S.partnerReport(
+    store,
+    users["u-p1"],
+    accepted.order,
+    "delivery",
+    signedReport(
+      users["u-p1"],
+      accepted.order,
+      1250,
+      "full",
+      "Boom and cab clean, no visible damage."
+    ),
+    []
+  )
   backdate(o1, -10)
   o1.createdAt = timestampAt(-12)
   store.put("orders", o1)
@@ -1017,10 +1042,33 @@ export function seed(store: Store) {
   q4 = approve(q4, users["u-p3"], 10)
   const acc4 = S.clientAccept(store, users["u-c1"], q4, {
     version: q4.currentVersion,
-    acceptTerms: true,
+    signatureName: users["u-c1"].name,
+    confirm: true,
   })
-  let o2 = S.partnerSetStatus(store, users["u-p3"], acc4.order, "in_progress")
-  o2 = S.partnerSetStatus(store, users["u-p3"], o2, "completed")
+  let o2 = S.partnerReport(
+    store,
+    users["u-p3"],
+    acc4.order,
+    "delivery",
+    signedReport(users["u-p3"], acc4.order, 830, "full", "Good condition."),
+    []
+  )
+  o2 = S.clientSignReport(store, users["u-c1"], o2, "delivery", {
+    signatureName: users["u-c1"].name,
+    confirm: true,
+  })
+  o2 = S.partnerReport(
+    store,
+    users["u-p3"],
+    o2,
+    "return",
+    signedReport(users["u-p3"], o2, 871.5, "three_quarters", "Normal wear."),
+    []
+  )
+  o2 = S.clientSignReport(store, users["u-c1"], o2, "return", {
+    signatureName: users["u-c1"].name,
+    confirm: true,
+  })
   const summary = S.orderSummary(o2)
   const fid = "f-demo-inv-118"
   const meta = store.putFile(
@@ -1049,12 +1097,7 @@ export function seed(store: Store) {
     fid,
     meta.name
   )
-  o2 = S.clientDeclarePayment(store, users["u-c1"], o2, {
-    amount: summary.agreedGross,
-    date: d(-5),
-    method: "Bank transfer",
-  })
-  S.partnerConfirmPayment(store, users["u-p3"], o2, { amount: summary.agreedGross, date: d(-4) })
+  S.clientPay(store, users["u-c1"], o2, o2.payment.items[0].id)
   for (const [coll, id, off] of [
     ["requests", r4.id, -45],
     ["quotes", q4.id, -44],
